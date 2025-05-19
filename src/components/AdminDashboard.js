@@ -1,12 +1,12 @@
 
 
 
+
 // import React, { useState, useEffect } from 'react';
 // import { LayoutDashboard, Settings, Users, FileText, BarChart3, LogOut, Bell, Shield } from 'lucide-react';
 // import { rtdb, signOut } from '../firebase';
-// import { ref, onValue } from 'firebase/database';
+// import { ref, onValue, get } from 'firebase/database';
 // import UsersList from './UsersList';
-// // import AdminPanel from './AdminPanel'; // Import the AdminPanel component
 // import '../styles/AdminDashboard.css';
 // import UserDetails from './UserDetails';
 
@@ -19,6 +19,7 @@
 //   });
   
 //   const [recentActivity, setRecentActivity] = useState([]);
+//   const [usersMap, setUsersMap] = useState({});
   
 //   const [parkingStatus, setParkingStatus] = useState({
 //     available: 0,
@@ -28,6 +29,23 @@
   
 //   const [loading, setLoading] = useState(true);
 //   const [currentView, setCurrentView] = useState('dashboard');
+
+//   // Fetch all users first
+//   useEffect(() => {
+//     const usersRef = ref(rtdb, 'users');
+    
+//     const usersUnsubscribe = onValue(usersRef, (snapshot) => {
+//       if (snapshot.exists()) {
+//         const usersData = snapshot.val();
+//         // Create a map of uid -> user data for quick lookup
+//         setUsersMap(usersData);
+//       }
+//     });
+
+//     return () => {
+//       usersUnsubscribe();
+//     };
+//   }, []);
 
 //   useEffect(() => {
 //     if (currentView !== 'dashboard') return;
@@ -46,20 +64,40 @@
 //     });
 
 //     const activitiesRef = ref(rtdb, 'recentActivities');
-//     const activitiesUnsubscribe = onValue(activitiesRef, (snapshot) => {
-//       const data = snapshot.val();
-//       if (data) {
-//         const activitiesArray = Object.entries(data).map(([id, activity]) => ({
-//           id,
-//           user: activity.user,
-//           action: activity.action,
-//           time: activity.time
-//         }));
+//     const activitiesUnsubscribe = onValue(activitiesRef, async (snapshot) => {
+//       if (snapshot.exists()) {
+//         const activitiesData = snapshot.val();
+        
+//         const activitiesArray = Object.entries(activitiesData).map(([id, activity]) => {
+//           // Get the proper user name based on userId
+//           let userName = "User"; // Default fallback
+          
+//           if (activity.userId && usersMap[activity.userId]) {
+//             // If we have this user in our usersMap, use their name
+//             userName = usersMap[activity.userId].name || userName;
+//           } else if (activity.user && activity.user !== "User") {
+//             // If activity has a user property and it's not the generic "User"
+//             userName = activity.user;
+//           }
+          
+//           return {
+//             id,
+//             user: userName,
+//             userId: activity.userId || null,
+//             action: activity.action,
+//             time: activity.time,
+//             timestamp: activity.timestamp || 0
+//           };
+//         });
+        
+//         // Sort by timestamp (newest first)
 //         activitiesArray.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 //         setRecentActivity(activitiesArray.slice(0, 5));
 //       } else {
 //         setRecentActivity([]);
 //       }
+      
+//       setLoading(false);
 //     });
 
 //     const statusRef = ref(rtdb, 'parkingStatus');
@@ -74,14 +112,12 @@
 //       }
 //     });
 
-//     setLoading(false);
-
 //     return () => {
 //       statsUnsubscribe();
 //       activitiesUnsubscribe();
 //       statusUnsubscribe();
 //     };
-//   }, [currentView]);
+//   }, [currentView, usersMap]);
 
 //   const handleLogout = async () => {
 //     try {
@@ -95,7 +131,7 @@
 //   const formattedStats = [
 //     { 
 //       title: 'Total Parking Spots', 
-//       value: 10, 
+//       value: 50, 
 //       change: '+4%', 
 //       icon: <BarChart3 size={20} /> 
 //     },
@@ -191,7 +227,7 @@
 //                         recentActivity.map((activity) => (
 //                           <div key={activity.id} className="activity-item">
 //                             <div className="activity-avatar">
-//                               {activity.user.charAt(0)}
+//                               {activity.user.charAt(0).toUpperCase()}
 //                             </div>
 //                             <div className="activity-details">
 //                               <p className="activity-text">
@@ -311,10 +347,11 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Settings, Users, FileText, BarChart3, LogOut, Bell, Shield } from 'lucide-react';
 import { rtdb, signOut } from '../firebase';
-import { ref, onValue, get } from 'firebase/database';
+import { ref, onValue, get, set, update } from 'firebase/database';
 import UsersList from './UsersList';
 import '../styles/AdminDashboard.css';
 import UserDetails from './UserDetails';
@@ -336,6 +373,9 @@ const AdminDashboard = ({ currentUser, onLogout, allBookings }) => {
     reserved: 0
   });
   
+  // Add state for parking enabled/disabled
+  const [parkingEnabled, setParkingEnabled] = useState(true);
+  
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState('dashboard');
 
@@ -353,6 +393,24 @@ const AdminDashboard = ({ currentUser, onLogout, allBookings }) => {
 
     return () => {
       usersUnsubscribe();
+    };
+  }, []);
+
+  // Listen for parking enabled status
+  useEffect(() => {
+    const parkingEnabledRef = ref(rtdb, 'parking_enabled');
+    
+    const parkingEnabledUnsubscribe = onValue(parkingEnabledRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setParkingEnabled(snapshot.val());
+      } else {
+        // Initialize in Firebase if it doesn't exist
+        set(parkingEnabledRef, true);
+      }
+    });
+
+    return () => {
+      parkingEnabledUnsubscribe();
     };
   }, []);
 
@@ -437,6 +495,21 @@ const AdminDashboard = ({ currentUser, onLogout, allBookings }) => {
     }
   };
 
+  // Toggle parking enabled status
+  const toggleParkingEnabled = async () => {
+    try {
+      const newStatus = !parkingEnabled;
+      
+      // Update the value in Firebase
+      const parkingEnabledRef = ref(rtdb, 'parking_enabled');
+      await set(parkingEnabledRef, newStatus);
+      
+      // Don't add to activity feed as requested
+    } catch (error) {
+      console.error("Error toggling parking status:", error);
+    }
+  };
+
   const formattedStats = [
     { 
       title: 'Total Parking Spots', 
@@ -517,10 +590,6 @@ const AdminDashboard = ({ currentUser, onLogout, allBookings }) => {
                           <p className="status-label">Occupied</p>
                           <p className="status-count">{parkingStatus.occupied}</p>
                         </div>
-                        {/* <div className="status-item reserved">
-                          <p className="status-label">Reserved</p>
-                          <p className="status-count">{parkingStatus.reserved}</p>
-                        </div> */}
                       </div>
                     </div>
                   </div>
@@ -551,6 +620,24 @@ const AdminDashboard = ({ currentUser, onLogout, allBookings }) => {
                           <p>No recent activity to display</p>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Single Master Toggle Button at the bottom of the screen */}
+                <div className="master-toggle-container">
+                  <div className="master-toggle-content">
+                    <div className="master-toggle-label">
+                      <span>Parking System</span>
+                      <span className={`toggle-status ${parkingEnabled ? 'enabled' : 'disabled'}`}>
+                        {parkingEnabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                    <div 
+                      className={`master-toggle ${parkingEnabled ? 'on' : 'off'}`}
+                      onClick={toggleParkingEnabled}
+                    >
+                      <div className="master-toggle-slider"></div>
                     </div>
                   </div>
                 </div>
@@ -597,20 +684,6 @@ const AdminDashboard = ({ currentUser, onLogout, allBookings }) => {
             <FileText className="nav-icon" size={20} />
            User Profiles
           </div>
-          
-          {/* <div className="nav-item">
-            <BarChart3 className="nav-icon" size={20} />
-            Analytics
-          </div>
-          
-          <div className="nav-section-title">
-            Settings
-          </div>
-          
-          <div className="nav-item">
-            <Settings className="nav-icon" size={20} />
-            Settings
-          </div> */}
           
           <div className="nav-item logout" onClick={handleLogout}>
             <LogOut className="nav-icon" size={20} />
