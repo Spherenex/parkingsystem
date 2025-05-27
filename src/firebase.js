@@ -378,8 +378,6 @@
 // };
 
 
-
-// firebase.js - Enhanced with Realtime Database integration
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
