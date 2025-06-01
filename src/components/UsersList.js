@@ -1,1509 +1,53 @@
 
 
 
-// import React, { useState, useEffect, useRef } from 'react';
-// import { rtdb } from '../firebase';
-// import { ref, onValue, update, get, set } from 'firebase/database';
-// import { db } from '../firebase';
-// import { collection, getDocs } from 'firebase/firestore';
+
+
+// import React, { useState, useEffect, useRef, useCallback } from 'react';
 // import { 
 //   Users, ArrowLeft, Clock, MapPin, Activity, ChevronRight, 
-//   CreditCard, Banknote, AlertTriangle, CheckCircle, Camera,
-//   Bike, Truck, Car
+//   CheckCircle, Camera, Bike, Truck, Car, RefreshCw, X, Video, Eye,
+//   AlertCircle, StopCircle, XCircle, Play
 // } from 'lucide-react';
-// import '../styles/UsersList.css';
 
 // const UsersList = ({ onBack, recentActivity = [] }) => {
+//   // All state declarations
 //   const [users, setUsers] = useState([]);
-//   const [allBookings, setAllBookings] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState('');
-//   const [expandedActivity, setExpandedActivity] = useState(null);
-//   const [userBookings, setUserBookings] = useState([]);
-//   const [activityError, setActivityError] = useState(null);
-//   const [loadingBookings, setLoadingBookings] = useState(true);
-//   const [bookingStates, setBookingStates] = useState({});
-//   const videoRefs = useRef({});
-//   const canvasRefs = useRef({});
-//   const [paymentProcessing, setPaymentProcessing] = useState({});
-  
-//   // Add state for corrected activity data
-//   const [correctedActivity, setCorrectedActivity] = useState([]);
-  
-//   // Add state for verification results
-//   const [verificationResults, setVerificationResults] = useState({});
-
-//   // Add state for firebase status values
-//   const [connectionStatus, setConnectionStatus] = useState(0);
-//   const [activeSlot, setActiveSlot] = useState(null);
-//   const [zones, setZones] = useState([
-//     { id: 1, name: 'Zone A', type: 'Car', occupied: false },
-//     { id: 2, name: 'Zone B', type: 'Car', occupied: false },
-//     { id: 3, name: 'Zone C', type: 'Car', occupied: false }
+//   const [allBookings, setAllBookings] = useState([
+//     {
+//       id: 'booking_001',
+//       parkingLotName: 'Tech Park Main',
+//       spaceId: '1',
+//       userId: 'user_001',
+//       location: 'Bangalore Tech Park, Whitefield',
+//       startTime: new Date(),
+//       endTime: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
+//       amount: 80,
+//       status: 'active',
+//       vehicleType: 2,
+//       bookingId: 'BP001'
+//     }
 //   ]);
-
-//   // Razorpay Test API Key (replace with your own from Razorpay Dashboard in Test Mode)
-//   const RAZORPAY_KEY_ID = 'rzp_test_vg2WzWGNEHJpgj'; // This is a dummy test key for example purposes
-
-//   // Listen for Firebase data changes
-//   useEffect(() => {
-//     // Listen for connection_status
-//     const connectionRef = ref(rtdb, 'connection_status');
-//     const connectionUnsubscribe = onValue(connectionRef, (snapshot) => {
-//       if (snapshot.exists()) {
-//         const status = snapshot.val();
-//         setConnectionStatus(parseInt(status));
-//       }
-//     });
-
-//     // Listen for slot
-//     const slotRef = ref(rtdb, 'slot');
-//     const slotUnsubscribe = onValue(slotRef, (snapshot) => {
-//       if (snapshot.exists()) {
-//         const slotValue = snapshot.val();
-//         // Remove quotes and convert to number
-//         const slotNumber = parseInt(slotValue.replace(/"/g, ''));
-//         setActiveSlot(slotNumber);
-        
-//         // Update zones based on the active slot
-//         setZones(prevZones => 
-//           prevZones.map(zone => ({
-//             ...zone,
-//             occupied: zone.id === slotNumber
-//           }))
-//         );
-//       }
-//     });
-
-//     return () => {
-//       connectionUnsubscribe();
-//       slotUnsubscribe();
-//     };
-//   }, []);
-
-//   // Fetch all users from Firestore
-//   useEffect(() => {
-//     const fetchUsers = async () => {
-//       try {
-//         const usersCollection = collection(db, 'users');
-//         const usersSnapshot = await getDocs(usersCollection);
-//         const usersList = usersSnapshot.docs.map(doc => ({
-//           id: doc.id,
-//           ...doc.data()
-//         }));
-//         setUsers(usersList);
-//       } catch (error) {
-//         console.error("Error fetching users:", error);
-//         // setError('Failed to load users. Please refresh the page.');
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchUsers();
-//   }, []);
-
-//   // Process recent activity data to ensure correct user names
-//   useEffect(() => {
-//     if (recentActivity.length > 0 && users.length > 0) {
-//       // Process activity data to ensure user names are correct
-//       const processedActivity = recentActivity.map(activity => {
-//         // If the activity has a userId, find the corresponding user
-//         if (activity.userId) {
-//           const user = users.find(u => u.id === activity.userId);
-//           if (user) {
-//             return {
-//               ...activity,
-//               user: user.name // Use the correct user name from users collection
-//             };
-//           }
-//         }
-//         return activity;
-//       });
-      
-//       setCorrectedActivity(processedActivity);
-//     } else {
-//       setCorrectedActivity(recentActivity);
-//     }
-//   }, [recentActivity, users]);
-
-//   // Fetch ALL bookings from the Realtime Database
-//   useEffect(() => {
-//     const fetchAllBookings = () => {
-//       setLoadingBookings(true);
-//       try {
-//         const bookingsRef = ref(rtdb, 'bookings');
-        
-//         const unsubscribe = onValue(bookingsRef, (snapshot) => {
-//           const bookingsList = [];
-//           if (snapshot.exists()) {
-//             snapshot.forEach((childSnapshot) => {
-//               const bookingData = childSnapshot.val();
-//               bookingsList.push({
-//                 id: childSnapshot.key,
-//                 ...bookingData,
-//                 bookingTime: bookingData.bookingTime
-//                   ? new Date(bookingData.bookingTime)
-//                   : null,
-//                 startTime: bookingData.startTime
-//                   ? new Date(bookingData.startTime)
-//                   : null,
-//                 endTime: bookingData.endTime
-//                   ? new Date(bookingData.endTime)
-//                   : null,
-//               });
-//             });
-
-//             bookingsList.sort((a, b) => {
-//               const timeA = a.bookingTime ? a.bookingTime.getTime() : 0;
-//               const timeB = b.bookingTime ? b.bookingTime.getTime() : 0;
-//               return timeB - timeA;
-//             });
-//           }
-
-//           setAllBookings(bookingsList);
-//           setLoadingBookings(false);
-//         }, (err) => {
-//           console.error("Error fetching all bookings:", err);
-//           setError('Failed to load booking data. Please try again later.');
-//           setLoadingBookings(false);
-//         });
-
-//         return () => unsubscribe();
-//       } catch (err) {
-//         console.error("Error setting up bookings listener:", err);
-//         setError('Failed to load booking data. Please try again later.');
-//         setLoadingBookings(false);
-//       }
-//     };
-
-//     fetchAllBookings();
-//   }, []);
-
-//   const extractBookingInfo = (actionText) => {
-//     const spaceMatch = actionText.match(/Space\s+#?(\d+)/);
-//     const locationMatch = actionText.match(/at\s+([^,]+)(?:\s+at\s+\d+\/\d+\/\d+|$)/);
-//     const dateTimeMatch = actionText.match(/(\d+\/\d+\/\d+,\s+\d+:\d+:\d+\s+[AP]M)/);
-    
-//     return {
-//       location: locationMatch ? locationMatch[1].trim() : null,
-//       spaceId: spaceMatch ? spaceMatch[1].trim() : null,
-//       dateTime: dateTimeMatch ? dateTimeMatch[1].trim() : null
-//     };
-//   };
-
-//   // Handle zone click
-//   const handleZoneClick = (zoneId) => {
-//     // Find corresponding bookings for this zone
-//     const zoneBookings = allBookings.filter(booking => {
-//       if (zoneId === 1 && booking.vehicleType === 2) return true;  // Zone A - Bikes
-//       if (zoneId === 2 && booking.vehicleType === 3) return true;  // Zone B - Autos
-//       if (zoneId === 3 && booking.vehicleType === 4) return true;  // Zone C - Cars
-//       return false;
-//     });
-    
-//     // If this is the active slot, try to find active booking and show details
-//     if (activeSlot === zoneId && connectionStatus > 0) {
-//       const activeBooking = zoneBookings.find(booking => 
-//         booking.status === 'active' || booking.status === 'confirmed'
-//       );
-      
-//       if (activeBooking) {
-//         // Try to find matching activity
-//         const activity = correctedActivity.find(a => 
-//           a.action && a.action.includes(`Space #${activeBooking.spaceId}`)
-//         );
-        
-//         if (activity) {
-//           handleActivityClick(activity);
-//         }
-//       }
-//     }
-//   };
-
-//   const handleActivityClick = (activity) => {
-//     if (expandedActivity === activity.id) {
-//       setExpandedActivity(null);
-//       setUserBookings([]);
-//       setActivityError(null);
-//       setBookingStates({});
-//       return;
-//     }
-
-//     setExpandedActivity(activity.id);
-//     setActivityError(null);
-//     setBookingStates({});
-    
-//     try {
-//       if (loadingBookings) {
-//         setActivityError("Still loading booking data. Please wait...");
-//         return;
-//       }
-
-//       if (allBookings.length === 0) {
-//         setActivityError("No booking data available.");
-//         return;
-//       }
-
-//       const { location, spaceId, dateTime } = extractBookingInfo(activity.action);
-//       const userObj = users.find(user => user.name === activity.user);
-//       const userId = userObj ? userObj.id : null;
-      
-//       let filteredBookings = [];
-      
-//       if (userId && spaceId) {
-//         filteredBookings = allBookings.filter(booking => 
-//           booking.userId === userId && 
-//           String(booking.spaceId) === String(spaceId)
-//         );
-//       }
-      
-//       if (filteredBookings.length === 0 && (spaceId || location)) {
-//         filteredBookings = allBookings.filter(booking => {
-//           const spaceMatch = spaceId ? String(booking.spaceId) === String(spaceId) : false;
-//           const locationMatch = location && booking.parkingLotName ? 
-//             booking.parkingLotName.includes(location) : false;
-          
-//           return spaceMatch || locationMatch;
-//         });
-//       }
-      
-//       if (filteredBookings.length === 0 && userId) {
-//         filteredBookings = allBookings.filter(booking => booking.userId === userId);
-//       }
-      
-//       if (filteredBookings.length === 0) {
-//         const firstName = activity.user.split(' ')[0];
-        
-//         filteredBookings = allBookings.filter(booking => {
-//           const bookingValues = Object.values(booking).map(val => 
-//             typeof val === 'string' ? val.toLowerCase() : ''
-//           );
-          
-//           const hasUserName = bookingValues.some(val => 
-//             val.includes(firstName.toLowerCase())
-//           );
-          
-//           let timeMatch = false;
-//           if (dateTime) {
-//             const activityTime = new Date(dateTime);
-//             const bookingTime = booking.bookingTime;
-//             if (bookingTime) {
-//               timeMatch = Math.abs(bookingTime - activityTime) < 1000 * 60 * 60;
-//             }
-//           }
-          
-//           return hasUserName || timeMatch;
-//         });
-//       }
-      
-//       setUserBookings(filteredBookings);
-      
-//       if (filteredBookings.length === 0) {
-//         setActivityError(`No bookings found related to this activity for ${activity.user}.`);
-//       }
-//     } catch (error) {
-//       console.error("Error processing activity:", error);
-//       setActivityError('Failed to process user activity data: ' + error.message);
-//     }
-//   };
-
-//   // Function to start webcam for check-in
-//   const startWebcamForCheckin = async (bookingId) => {
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         webcamActive: true,
-//         webcamMode: 'checkin',
-//         webcamError: null,
-//         checkinVehicleNumber: null,
-//         successMessage: null,
-//         zoneSelected: false,
-//       }
-//     }));
-
-//     try {
-//       const stream = await navigator.mediaDevices.getUserMedia({ 
-//         video: { 
-//           width: { ideal: 1280 },
-//           height: { ideal: 720 },
-//           facingMode: "environment" // Prefer back camera if available
-//         } 
-//       });
-      
-//       if (videoRefs.current[bookingId]) {
-//         videoRefs.current[bookingId].srcObject = stream;
-//         videoRefs.current[bookingId].onloadedmetadata = () => {
-//           videoRefs.current[bookingId].play();
-//         };
-//       }
-//     } catch (error) {
-//       console.error("Error accessing webcam:", error);
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           webcamActive: false,
-//           webcamError: 'Failed to access camera. Please ensure camera permissions are granted.'
-//         }
-//       }));
-//     }
-//   };
-
-//   // Function to start webcam for checkout
-//   const startWebcamForCheckout = async (bookingId) => {
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         webcamActive: true,
-//         webcamMode: 'checkout',
-//         webcamError: null,
-//         checkoutVehicleNumber: null,
-//         successMessage: null,
-//       }
-//     }));
-
-//     try {
-//       const stream = await navigator.mediaDevices.getUserMedia({ 
-//         video: { 
-//           width: { ideal: 1280 },
-//           height: { ideal: 720 },
-//           facingMode: "environment" // Prefer back camera if available
-//         } 
-//       });
-      
-//       if (videoRefs.current[bookingId]) {
-//         videoRefs.current[bookingId].srcObject = stream;
-//         videoRefs.current[bookingId].onloadedmetadata = () => {
-//           videoRefs.current[bookingId].play();
-//         };
-//       }
-//     } catch (error) {
-//       console.error("Error accessing webcam:", error);
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           webcamActive: false,
-//           webcamError: 'Failed to access camera. Please ensure camera permissions are granted.'
-//         }
-//       }));
-//     }
-//   };
-
-//   // Function to capture image for check-in
-//   const captureCheckinImage = (bookingId) => {
-//     const video = videoRefs.current[bookingId];
-//     const canvas = canvasRefs.current[bookingId];
-    
-//     if (!video || !canvas) {
-//       console.error('Video or canvas reference not found.');
-//       return;
-//     }
-    
-//     const context = canvas.getContext('2d');
-    
-//     canvas.width = video.videoWidth;
-//     canvas.height = video.videoHeight;
-//     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-//     // Save the captured image data URL
-//     const imageDataUrl = canvas.toDataURL('image/jpeg');
-    
-//     // Stop the webcam stream
-//     const stream = video.srcObject;
-//     if (stream) {
-//       const tracks = stream.getTracks();
-//       tracks.forEach(track => track.stop());
-//       video.srcObject = null;
-//     }
-    
-//     // In a real app, you would send the image to a backend OCR service
-//     // For this example, we'll generate a random vehicle number
-//     const stateCode = ['KA', 'MH', 'TN', 'AP', 'DL'][Math.floor(Math.random() * 5)];
-//     const regionCode = `${Math.floor(1 + Math.random() * 99)}`.padStart(2, '0');
-//     const letterCode = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + 
-//                       String.fromCharCode(65 + Math.floor(Math.random() * 26));
-//     const numberCode = `${Math.floor(1000 + Math.random() * 9000)}`;
-    
-//     const simulatedVehicleNumber = `${stateCode}-${regionCode}-${letterCode}-${numberCode}`;
-    
-//     // Update state
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         webcamActive: true, // Keep webcam active for zone selection
-//         webcamMode: 'zonepicker',
-//         checkinVehicleNumber: simulatedVehicleNumber,
-//         checkinImageData: imageDataUrl,
-//         successMessage: null,
-//       }
-//     }));
-//   };
-
-//   // Function to select vehicle zone
-//   const selectZone = (bookingId, zoneType) => {
-//     let vehicleType;
-//     let slotNumber;
-    
-//     switch (zoneType) {
-//       case 'A':
-//         vehicleType = 2; // Bike
-//         slotNumber = 1;
-//         break;
-//       case 'B':
-//         vehicleType = 3; // Auto
-//         slotNumber = 2;
-//         break;
-//       case 'C':
-//         vehicleType = 4; // Car
-//         slotNumber = 3;
-//         break;
-//       default:
-//         vehicleType = null;
-//         slotNumber = null;
-//     }
-    
-//     // Update state
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         webcamActive: false,
-//         webcamMode: null,
-//         vehicleType: vehicleType,
-//         zoneSelected: true,
-//         successMessage: 'Check-in successful! Vehicle number plate captured.',
-//       }
-//     }));
-    
-//     // Update Firebase with check-in data and slot information
-//     updateBookingWithCheckinData(
-//       bookingId, 
-//       bookingStates[bookingId].checkinVehicleNumber, 
-//       bookingStates[bookingId].checkinImageData, 
-//       vehicleType,
-//       slotNumber
-//     );
-//   };
-
-//   // Function to capture image for checkout
-//   const captureCheckoutImage = (bookingId) => {
-//     const video = videoRefs.current[bookingId];
-//     const canvas = canvasRefs.current[bookingId];
-    
-//     if (!video || !canvas) {
-//       console.error('Video or canvas reference not found.');
-//       return;
-//     }
-    
-//     const context = canvas.getContext('2d');
-    
-//     canvas.width = video.videoWidth;
-//     canvas.height = video.videoHeight;
-//     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-//     // Save the captured image data URL
-//     const imageDataUrl = canvas.toDataURL('image/jpeg');
-    
-//     // Stop the webcam stream
-//     const stream = video.srcObject;
-//     if (stream) {
-//       const tracks = stream.getTracks();
-//       tracks.forEach(track => track.stop());
-//       video.srcObject = null;
-//     }
-    
-//     // In a real app, you would send the image to a backend OCR service
-//     // For this example, we'll generate a random vehicle number
-//     const stateCode = ['KA', 'MH', 'TN', 'AP', 'DL'][Math.floor(Math.random() * 5)];
-//     const regionCode = `${Math.floor(1 + Math.random() * 99)}`.padStart(2, '0');
-//     const letterCode = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + 
-//                       String.fromCharCode(65 + Math.floor(Math.random() * 26));
-//     const numberCode = `${Math.floor(1000 + Math.random() * 9000)}`;
-    
-//     const simulatedVehicleNumber = `${stateCode}-${regionCode}-${letterCode}-${numberCode}`;
-    
-//     // Get the booking to access check-in vehicle number
-//     const booking = userBookings.find(b => b.id === bookingId);
-//     const checkinVehicleNumber = booking.checkinVehicleNumber || 
-//       (bookingStates[bookingId] && bookingStates[bookingId].checkinVehicleNumber);
-    
-//     // For demo purposes, let's determine match with a random result (50% chance of match)
-//     // In a real application, this would be an actual comparison using computer vision
-//     const isMatch = Math.random() > 0.5;
-//     const matchValue = isMatch ? 1 : 0;
-    
-//     // Set verification result
-//     setVerificationResults({
-//       ...verificationResults,
-//       [bookingId]: {
-//         isMatch,
-//         matchValue,
-//         message: isMatch 
-//           ? 'Vehicle number plate verified successfully!' 
-//           : 'Vehicle number plate does not match check-in record!',
-//         checkoutVehicleNumber: simulatedVehicleNumber,
-//         checkoutImageData: imageDataUrl
-//       }
-//     });
-    
-//     // Update state
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         webcamActive: false,
-//         webcamMode: null,
-//         checkoutVehicleNumber: simulatedVehicleNumber,
-//         checkoutImageData: imageDataUrl,
-//         successMessage: null, // We'll use verification results instead
-//       }
-//     }));
-    
-//     // Update Firebase with verification result
-//     updateBookingWithCheckoutData(
-//       bookingId, 
-//       simulatedVehicleNumber, 
-//       imageDataUrl, 
-//       matchValue
-//     );
-//   };
-
-//   // Function to update Firebase with check-in data - FIXED
-//   const updateBookingWithCheckinData = async (bookingId, vehicleNumber, imageData, vehicleType, slotNumber) => {
-//     try {
-//       // First update the booking with check-in data
-//       const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-//       await update(bookingRef, { 
-//         checkinVehicleNumber: vehicleNumber,
-//         checkinImageData: imageData,
-//         vehicleType: vehicleType,
-//         checkedIn: true,
-//         checkinTime: new Date().toISOString()
-//       });
-      
-//       // Update slot in Firebase - Using set() with the string value directly
-//       const slotRef = ref(rtdb, 'slot');
-//       await set(slotRef, JSON.stringify(slotNumber.toString()));
-      
-//       // Increment connection status - Using update() with an object
-//       const connectionRef = ref(rtdb, 'connection_status');
-//       const connectionSnapshot = await get(connectionRef);
-//       const currentValue = connectionSnapshot.exists() ? parseInt(connectionSnapshot.val()) : 0;
-//       await set(connectionRef, currentValue + 1);
-      
-//       // Update local state
-//       setUserBookings(prevBookings =>
-//         prevBookings.map(booking =>
-//           booking.id === bookingId
-//             ? { 
-//                 ...booking, 
-//                 checkinVehicleNumber: vehicleNumber,
-//                 checkinImageData: imageData,
-//                 vehicleType: vehicleType,
-//                 checkedIn: true,
-//                 checkinTime: new Date()
-//               }
-//             : booking
-//         )
-//       );
-//     } catch (error) {
-//       console.error("Error updating check-in data in Firebase:", error);
-//       setActivityError('Failed to update check-in data in booking.');
-      
-//       // Reset check-in data in local state
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           webcamActive: false,
-//           webcamMode: null,
-//           checkinVehicleNumber: null,
-//           checkinImageData: null,
-//           vehicleType: null,
-//           zoneSelected: false,
-//         }
-//       }));
-//     }
-//   };
-
-//   // Function to update Firebase with checkout data
-//   const updateBookingWithCheckoutData = async (bookingId, vehicleNumber, imageData, matchValue) => {
-//     try {
-//       const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-//       await update(bookingRef, { 
-//         checkoutVehicleNumber: vehicleNumber,
-//         checkoutImageData: imageData,
-//         verificationResult: matchValue,
-//         checkedOut: true,
-//         checkoutTime: new Date().toISOString()
-//       });
-      
-//       // Update local state
-//       setUserBookings(prevBookings =>
-//         prevBookings.map(booking =>
-//           booking.id === bookingId
-//             ? { 
-//                 ...booking, 
-//                 checkoutVehicleNumber: vehicleNumber,
-//                 checkoutImageData: imageData,
-//                 verificationResult: matchValue,
-//                 checkedOut: true,
-//                 checkoutTime: new Date()
-//               }
-//             : booking
-//         )
-//       );
-//     } catch (error) {
-//       console.error("Error updating checkout data in Firebase:", error);
-//       setActivityError('Failed to update checkout data in booking.');
-//     }
-//   };
-
-//   const handlePaymentMethod = async (bookingId, method) => {
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         paymentMethod: method,
-//         successMessage: null, // Reset success message
-//       }
-//     }));
-
-//     if (method === 'cash') {
-//       processCashPayment(bookingId);
-//     } else if (method === 'razorpay') {
-//       await initiateRazorpayPayment(bookingId);
-//     }
-//   };
-
-//   const processCashPayment = async (bookingId) => {
-//     setPaymentProcessing(prev => ({ ...prev, [bookingId]: true }));
-//     try {
-//       const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-//       await update(bookingRef, { 
-//         status: 'completed',
-//         paymentMethod: 'cash',
-//         endTime: new Date().toISOString(),
-//         paidAt: new Date().toISOString()
-//       });
-      
-//       setUserBookings(prevBookings =>
-//         prevBookings.map(booking =>
-//           booking.id === bookingId
-//             ? { 
-//                 ...booking, 
-//                 status: 'completed', 
-//                 paymentMethod: 'cash', 
-//                 endTime: new Date(),
-//                 paidAt: new Date()
-//               }
-//             : booking
-//         )
-//       );
-      
-//       // Set success message for this booking
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           webcamActive: false,
-//           webcamMode: null,
-//           successMessage: 'Payment successful!', // Set per-booking success message
-//         }
-//       }));
-//     } catch (error) {
-//       console.error("Error updating booking status for cash payment:", error);
-//       setActivityError('Failed to process cash payment. Please try again.');
-      
-//       // Reset payment method
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           paymentMethod: null,
-//         }
-//       }));
-//     } finally {
-//       setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//     }
-//   };
-
-//   const loadRazorpayScript = () => {
-//     return new Promise((resolve) => {
-//       if (window.Razorpay) {
-//         resolve(true);
-//         return;
-//       }
-      
-//       const script = document.createElement('script');
-//       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-//       script.async = true;
-      
-//       script.onload = () => {
-//         console.log("Razorpay SDK loaded successfully");
-//         resolve(true);
-//       };
-      
-//       script.onerror = () => {
-//         console.error("Failed to load Razorpay SDK");
-//         resolve(false);
-//       };
-      
-//       document.body.appendChild(script);
-//     });
-//   };
-
-//   const initiateRazorpayPayment = async (bookingId) => {
-//     setPaymentProcessing(prev => ({ ...prev, [bookingId]: true }));
-//     try {
-//       // Load Razorpay script if not already loaded
-//       const razorpayLoaded = await loadRazorpayScript();
-//       if (!razorpayLoaded) {
-//         setActivityError('Razorpay SDK failed to load. Please check your internet connection.');
-//         setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//         setBookingStates(prev => ({
-//           ...prev,
-//           [bookingId]: {
-//             ...prev[bookingId],
-//             paymentMethod: null,
-//           }
-//         }));
-//         return;
-//       }
-
-//       const booking = userBookings.find(b => b.id === bookingId);
-//       if (!booking) {
-//         setActivityError('Booking not found. Please try again.');
-//         setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//         return;
-//       }
-
-//       // Get user details for prefill
-//       const user = users.find(user => user.id === booking.userId) || {};
-      
-//       // Calculate parking duration in hours (for receipt)
-//       let durationText = 'Parking';
-//       if (booking.startTime && booking.endTime) {
-//         const durationMs = booking.endTime - booking.startTime;
-//         const diffHrs = Math.floor(durationMs / (1000 * 60 * 60));
-//         const diffMins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-//         durationText = `${diffHrs}h ${diffMins}m Parking`;
-//       }
-
-//       // Create a unique order ID for this transaction
-//       const orderIdPrefix = 'ord';
-//       const randomId = Math.random().toString(36).substring(2, 10);
-//       const orderId = `${orderIdPrefix}_${Date.now()}_${randomId}`;
-
-//       // Get amount from booking (default to 80 if not available)
-//       const amount = booking.amount || 80;
-
-//       const options = {
-//         key: RAZORPAY_KEY_ID,
-//         amount: amount * 100, // Amount in paise
-//         currency: 'INR',
-//         name: 'Smart Parking',
-//         description: `Payment for ${durationText} at ${booking.parkingLotName || 'Parking Lot'}`,
-//         order_id: orderId, // Normally you would create this on your server
-//         handler: function(response) {
-//           console.log("Payment successful", response);
-//           handleRazorpaySuccess(bookingId, response);
-//         },
-//         prefill: {
-//           name: user.name || 'Customer',
-//           email: user.email || '',
-//           contact: user.phone || '',
-//         },
-//         notes: {
-//           bookingId: booking.id,
-//           parkingLotName: booking.parkingLotName,
-//           spaceId: booking.spaceId,
-//           startTime: booking.startTime ? booking.startTime.toISOString() : '',
-//         },
-//         theme: {
-//           color: '#3b82f6', // Blue color matching your UI
-//         },
-//         modal: {
-//           ondismiss: function() {
-//             console.log('Payment dismissed');
-//             setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//             setBookingStates(prev => ({
-//               ...prev,
-//               [bookingId]: {
-//                 ...prev[bookingId],
-//                 paymentMethod: null,
-//               }
-//             }));
-//           }
-//         }
-//       };
-
-//       const razorpay = new window.Razorpay(options);
-      
-//       razorpay.on('payment.failed', function(response) {
-//         console.error('Payment failed', response.error);
-//         handleRazorpayFailure(bookingId, response.error);
-//       });
-      
-//       // Open Razorpay payment form
-//       razorpay.open();
-//     } catch (error) {
-//       console.error("Error initiating Razorpay payment:", error);
-//       setActivityError(`Failed to initiate payment: ${error.message}`);
-//       setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           paymentMethod: null,
-//         }
-//       }));
-//     }
-//   };
-
-//   const handleRazorpaySuccess = async (bookingId, paymentResponse) => {
-//     console.log("Processing successful payment", bookingId, paymentResponse);
-//     try {
-//       // Update booking in Firebase
-//       const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-//       await update(bookingRef, { 
-//         status: 'completed',
-//         paymentMethod: 'razorpay',
-//         paymentId: paymentResponse.razorpay_payment_id,
-//         orderId: paymentResponse.razorpay_order_id,
-//         paymentSignature: paymentResponse.razorpay_signature,
-//         endTime: new Date().toISOString(),
-//         paidAt: new Date().toISOString()
-//       });
-
-//       // Update local state
-//       setUserBookings(prevBookings =>
-//         prevBookings.map(booking =>
-//           booking.id === bookingId
-//             ? { 
-//                 ...booking, 
-//                 status: 'completed', 
-//                 paymentMethod: 'razorpay',
-//                 paymentId: paymentResponse.razorpay_payment_id,
-//                 endTime: new Date(),
-//                 paidAt: new Date()
-//               }
-//             : booking
-//         )
-//       );
-      
-//       // Set success message for this booking
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           webcamActive: false,
-//           webcamMode: null,
-//           paymentMethod: null,
-//           successMessage: 'Payment successful!', // Set per-booking success message
-//         }
-//       }));
-//     } catch (error) {
-//       console.error("Error updating booking after payment:", error);
-//       setActivityError('Payment was successful, but we had trouble updating your booking. Please contact support.');
-//     } finally {
-//       setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//     }
-//   };
-
-//   const handleRazorpayFailure = (bookingId, error) => {
-//     console.error("Payment failed", error);
-    
-//     setActivityError(`Payment failed: ${error.description || 'Unknown error occurred'}`);
-//     setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-    
-//     // Reset payment method selection
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         paymentMethod: null,
-//       }
-//     }));
-//   };
-
-//   const formatDateTime = (date) => {
-//     if (!date) return 'N/A';
-//     return date.toLocaleString('en-US', {
-//       weekday: 'short',
-//       year: 'numeric',
-//       month: 'short',
-//       day: 'numeric',
-//       hour: '2-digit',
-//       minute: '2-digit',
-//       timeZone: 'Asia/Kolkata'
-//     });
-//   };
-
-//   const getStatusClass = (status) => {
-//     switch (status) {
-//       case 'active':
-//         return 'status-active';
-//       case 'completed':
-//         return 'status-completed';
-//       case 'cancelled':
-//         return 'status-cancelled';
-//       default:
-//         return '';
-//     }
-//   };
-
-//   const getTimeDifference = (start, end) => {
-//     if (!start || !end) return 'N/A';
-//     const diffMs = end - start;
-//     const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-//     const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-//     return `${diffHrs}h ${diffMins}m`;
-//   };
-
-//   const determineBookingStatus = (booking) => {
-//     const now = new Date();
-//     const startTime = booking.startTime ? new Date(booking.startTime) : null;
-//     const endTime = booking.endTime ? new Date(booking.endTime) : null;
-
-//     if (booking.status === 'cancelled') {
-//       return 'cancelled';
-//     } else if (booking.status === 'completed') {
-//       return 'completed';
-//     } else if (startTime && endTime) {
-//       if (now < startTime) {
-//         return 'active';
-//       } else if (now >= startTime && now <= endTime) {
-//         return 'active';
-//       } else if (now > endTime) {
-//         return 'completed';
-//       }
-//     }
-//     return booking.status || 'active';
-//   };
-
-//   // Helper function to get vehicle type label
-//   const getVehicleTypeLabel = (type) => {
-//     switch (type) {
-//       case 2:
-//         return 'Car';
-//       case 3:
-//         return 'Car';
-//       case 4:
-//         return 'Car';
-//       default:
-//         return 'Not specified';
-//     }
-//   };
-
-//   // Helper function to get vehicle type icon
-//   const getVehicleTypeIcon = (type) => {
-//     switch (type) {
-//       case 2:
-//         return <Car size={16} />;
-//       case 3:
-//         return <Truck size={16} />;
-//       case 4:
-//         return <Car size={16} />;
-//       default:
-//         return <Car size={16} />;
-//     }
-//   };
-
-//   // Helper function to render zone icon
-//   const renderZoneIcon = (zoneId) => {
-//     switch (zoneId) {
-//       case 1:
-//         return <Bike size={24} />;
-//       case 2:
-//         return <Truck size={24} />;
-//       case 3:
-//         return <Car size={24} />;
-//       default:
-//         return null;
-//     }
-//   };
-
-//   return (
-//     <div className="users-list-container">
-//       <div className="users-list-header">
-//         <button className="back-button" onClick={onBack}>
-//           <ArrowLeft size={18} />
-//           Back to Dashboard
-//         </button>
-//         <h1>
-//           <Users size={24} style={{ marginRight: '8px' }} />
-//          Parking Lists
-//         </h1>
-//       </div>
-
-//       {loading || loadingBookings ? (
-//         <div className="loading-container">
-//           <div className="loading-spinner"></div>
-//           <p>Loading data...</p>
-//         </div>
-//       ) : (
-//         <>
-//           {/* Zone Dashboard Section */}
-//           <div className="dashboard-card">
-//             <div className="card-header">
-//               <h2 className="card-title">Parking Zones</h2>
-//               <div className="connection-status">
-//                 <span>Active Vehicles: {connectionStatus}</span>
-//               </div>
-//             </div>
-//             <div className="zones-container">
-//               {zones.map(zone => (
-//                 <div 
-//                   key={zone.id}
-//                   className={`zone-card ${zone.occupied ? 'zone-occupied' : 'zone-available'} ${activeSlot === zone.id ? 'zone-selected' : ''}`}
-//                   onClick={() => handleZoneClick(zone.id)}
-//                 >
-//                   <div className="zone-icon">
-//                     {renderZoneIcon(zone.id)}
-//                   </div>
-//                   <div className="zone-info">
-//                     <h3>Slot {zone.id}</h3>
-//                     <p>{zone.name} ({zone.type})</p>
-//                     <div className="zone-status">
-//                       <span className="zone-vehicles">
-//                         {zone.occupied ? '1 Vehicle' : '0 Vehicles'}
-//                       </span>
-//                       <span className={`zone-indicator ${zone.occupied ? 'status-occupied' : 'status-available'}`}>
-//                         {zone.occupied ? 'Occupied' : 'Available'}
-//                       </span>
-//                     </div>
-//                   </div>
-//                 </div>
-//               ))}
-//             </div>
-//           </div>
-
-//           <div className="users-table-container">
-//             {users.length > 0 ? (
-//               <table className="users-table">
-//                 <thead>
-//                   <tr>
-//                     <th>Name</th>
-//                     <th>Email</th>
-//                     <th>Role</th>
-//                     <th>Joined</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {users.map((user) => (
-//                     <tr key={user.id}>
-//                       <td>
-//                         <div className="user-avatar">
-//                           {user.name ? user.name.charAt(0) : 'U'}
-//                         </div>
-//                         {user.name || 'Unknown User'}
-//                       </td>
-//                       <td>{user.email || 'N/A'}</td>
-//                       <td>
-//                         <span className={`role-badge ${user.role}`}>
-//                           {user.role || 'N/A'}
-//                         </span>
-//                       </td>
-//                       <td>
-//                         {user.createdAt
-//                           ? new Date(user.createdAt.seconds * 1000).toLocaleDateString('en-US', {
-//                               year: 'numeric',
-//                               month: 'short',
-//                               day: 'numeric'
-//                             })
-//                           : 'N/A'}
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             ) : users.length === 0 && correctedActivity.length === 0 ? (
-//               <div className="no-users">
-//                 <p>No users found.</p>
-//               </div>
-//             ) : null}
-//           </div>
-
-//           {error && <div className="error-message">{error}</div>}
-
-//           <div className="dashboard-card" style={{ marginTop: '20px' }}>
-//             <div className="card-header">
-//               <h2 className="card-title">Recent Activity</h2>
-//               <div className="view-all">View All</div>
-//             </div>
-            
-//             <div className="activity-list">
-//               {correctedActivity.length > 0 ? (
-//                 correctedActivity.map((activity) => (
-//                   <div key={activity.id}>
-//                     <div
-//                       className="activity-item activity-card"
-//                       onClick={() => handleActivityClick(activity)}
-//                     >
-//                       <div className="activity-avatar">
-//                         {activity.user.charAt(0)}
-//                       </div>
-//                       <div className="activity-details">
-//                         <p className="activity-text">
-//                           <span className="activity-user">{activity.user}</span> {activity.action}
-//                         </p>
-//                         <p className="activity-time">{activity.time}</p>
-//                       </div>
-//                       <ChevronRight
-//                         size={20}
-//                         className={`expand-icon ${expandedActivity === activity.id ? 'rotated' : ''}`}
-//                       />
-//                     </div>
-
-//                     {expandedActivity === activity.id && (
-//                       <div className="activity-details-expanded">
-//                         <h3>{activity.user}'s Parking History</h3>
-//                         {activityError && (
-//                           <div className="error-message">{activityError}</div>
-//                         )}
-
-//                         {userBookings.length === 0 ? (
-//                           <div className="no-bookings">
-//                             <Activity size={48} />
-//                             <h4>No bookings found</h4>
-//                             <p>No booking history available for this user.</p>
-//                           </div>
-//                         ) : (
-//                           <div className="bookings-list">
-//                             {userBookings.map((booking) => {
-//                               const displayStatus = determineBookingStatus(booking);
-//                               const bookingState = bookingStates[booking.id] || {};
-//                               const verificationResult = verificationResults[booking.id];
-//                               const isProcessingPayment = paymentProcessing[booking.id];
-                              
-//                               // Check if user has checked in
-//                               const hasCheckedIn = booking.checkedIn || 
-//                                 booking.checkinVehicleNumber || 
-//                                 (bookingState && bookingState.zoneSelected);
-                              
-//                               // Check if user has checked out
-//                               const hasCheckedOut = booking.checkedOut || 
-//                                 booking.checkoutVehicleNumber || 
-//                                 (verificationResult && verificationResult.checkoutVehicleNumber);
-
-//                               return (
-//                                 <div key={booking.id} className="booking-card">
-//                                   <div className="booking-card-header">
-//                                     <div className="booking-basic-info">
-//                                       <h4>{booking.parkingLotName || 'Parking Lot'}</h4>
-//                                       <div className="booking-meta">
-//                                         <span className="booking-id">ID: {booking.bookingId || booking.id || 'N/A'}</span>
-//                                         <span className={`booking-status ${getStatusClass(displayStatus)}`}>
-//                                           {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
-//                                         </span>
-//                                       </div>
-//                                     </div>
-//                                   </div>
-
-//                                   <div className="booking-details">
-//                                     <div className="detail-section">
-//                                       <h5>Location</h5>
-//                                       <div className="detail-item">
-//                                         <MapPin size={16} />
-//                                         <span>{booking.location || booking.parkingLotLocation || 'Location not available'}</span>
-//                                       </div>
-//                                     </div>
-
-//                                     <div className="detail-section">
-//                                       <h5>Timing Details</h5>
-//                                       <div className="detail-item">
-//                                         <Clock size={16} />
-//                                         <div className="time-details">
-//                                           <div className="time-range">
-//                                             <span>Start: {formatDateTime(booking.startTime)}</span>
-//                                             <span>End: {formatDateTime(booking.endTime)}</span>
-//                                           </div>
-//                                           <div className="duration">
-//                                             Duration: {getTimeDifference(booking.startTime, booking.endTime)}
-//                                           </div>
-//                                         </div>
-//                                       </div>
-//                                     </div>
-
-//                                     <div className="detail-section payment-details">
-//                                       <div className="payment-info">
-//                                         <h5>Payment Details</h5>
-//                                         <div className="payment-amount">₹{booking.amount || booking.paymentAmount || '80'}</div>
-//                                       </div>
-//                                       <div className="payment-method">
-//                                         {booking.paymentMethod ? 
-//                                           `${booking.paymentMethod.charAt(0).toUpperCase() + booking.paymentMethod.slice(1)} Payment` : 
-//                                           (booking.status === 'completed' ? 'Payment Completed' : 'Payment Pending')
-//                                         }
-//                                         {booking.paymentId && (
-//                                           <div className="payment-id">
-//                                             Transaction ID: {booking.paymentId.substring(0, 10)}...
-//                                           </div>
-//                                         )}
-//                                       </div>
-//                                     </div>
-
-//                                     <div className="detail-section">
-//                                       <h5>Parking Space</h5>
-//                                       <div className="space-info">
-//                                         <div className="space-number">Space #{booking.spaceId || 'N/A'}</div>
-                                        
-//                                         {/* Vehicle Type Display */}
-//                                         {(booking.vehicleType || (bookingState && bookingState.vehicleType)) && (
-//                                           <div className="vehicle-type">
-//                                             {getVehicleTypeIcon(booking.vehicleType || bookingState.vehicleType)}
-//                                             <span>Type: {getVehicleTypeLabel(booking.vehicleType || bookingState.vehicleType)}</span>
-//                                           </div>
-//                                         )}
-                                        
-//                                         {/* Check-in Vehicle Number Display */}
-//                                         {(booking.checkinVehicleNumber || (bookingState && bookingState.checkinVehicleNumber)) && (
-//                                           <div className="vehicle-info">
-//                                             Check-in Vehicle: {booking.checkinVehicleNumber || bookingState.checkinVehicleNumber}
-//                                           </div>
-//                                         )}
-                                        
-//                                         {/* Checkout Vehicle Number Display */}
-//                                         {(booking.checkoutVehicleNumber || 
-//                                           (bookingState && bookingState.checkoutVehicleNumber) ||
-//                                           (verificationResult && verificationResult.checkoutVehicleNumber)) && (
-//                                           <div className="vehicle-info">
-//                                             Checkout Vehicle: {booking.checkoutVehicleNumber || 
-//                                               bookingState.checkoutVehicleNumber || 
-//                                               (verificationResult && verificationResult.checkoutVehicleNumber)}
-//                                           </div>
-//                                         )}
-//                                       </div>
-//                                     </div>
-
-//                                     {/* Check-in Image Display */}
-//                                     {(booking.checkinImageData || (bookingState && bookingState.checkinImageData)) && (
-//                                       <div className="image-preview-section">
-//                                         <h5>Check-in Image</h5>
-//                                         <div className="image-preview">
-//                                           <img 
-//                                             src={booking.checkinImageData || bookingState.checkinImageData} 
-//                                             alt="Check-in Vehicle" 
-//                                             className="captured-image"
-//                                           />
-//                                         </div>
-//                                       </div>
-//                                     )}
-
-//                                     {/* Checkout Image Display */}
-//                                     {(booking.checkoutImageData || 
-//                                       (bookingState && bookingState.checkoutImageData) ||
-//                                       (verificationResult && verificationResult.checkoutImageData)) && (
-//                                       <div className="image-preview-section">
-//                                         <h5>Checkout Image</h5>
-//                                         <div className="image-preview">
-//                                           <img 
-//                                             src={booking.checkoutImageData || 
-//                                               bookingState.checkoutImageData || 
-//                                               (verificationResult && verificationResult.checkoutImageData)} 
-//                                             alt="Checkout Vehicle" 
-//                                             className="captured-image"
-//                                           />
-//                                         </div>
-//                                       </div>
-//                                     )}
-
-//                                     {/* Verification Result Display */}
-//                                     {verificationResult && (
-//                                       <div className={`verification-result ${verificationResult.isMatch ? 'verification-success' : 'verification-error'}`}>
-//                                         {verificationResult.isMatch ? (
-//                                           <div className="verification-success-content">
-//                                             <CheckCircle size={24} />
-//                                             <span>{verificationResult.message}</span>
-//                                           </div>
-//                                         ) : (
-//                                           <div className="verification-error-content">
-//                                             <AlertTriangle size={24} />
-//                                             <span>{verificationResult.message}</span>
-//                                           </div>
-//                                         )}
-//                                       </div>
-//                                     )}
-
-//                                     {/* Zone Selection UI */}
-//                                     {bookingState.webcamMode === 'zonepicker' && (
-//                                       <div className="zone-selection">
-//                                         <h5>Select Vehicle Zone</h5>
-//                                         <div className="vehicle-image-container">
-//                                           <img 
-//                                             src={bookingState.checkinImageData} 
-//                                             alt="Vehicle" 
-//                                             className="vehicle-image"
-//                                           />
-//                                         </div>
-//                                         <div className="zone-buttons">
-//                                           <button 
-//                                             className="zone-button zone-a"
-//                                             onClick={() => selectZone(booking.id, 'A')}
-//                                           >
-//                                             <Bike size={20} />
-//                                             <span>Zone A (Car)</span>
-//                                           </button>
-//                                           <button 
-//                                             className="zone-button zone-b"
-//                                             onClick={() => selectZone(booking.id, 'B')}
-//                                           >
-//                                             <Truck size={20} />
-//                                             <span>Zone B (Car)</span>
-//                                           </button>
-//                                           <button 
-//                                             className="zone-button zone-c"
-//                                             onClick={() => selectZone(booking.id, 'C')}
-//                                           >
-//                                             <Car size={20} />
-//                                             <span>Zone C (Car)</span>
-//                                           </button>
-//                                         </div>
-//                                       </div>
-//                                     )}
-
-//                                     {/* Success Message */}
-//                                     {bookingState.successMessage && !verificationResult && (
-//                                       <div className="success-message-card">
-//                                         {bookingState.successMessage}
-//                                       </div>
-//                                     )}
-
-//                                     {/* Check-in Button - Only show for active bookings without check-in */}
-//                                     {displayStatus === 'active' && 
-//                                      !hasCheckedIn && 
-//                                      !bookingState.webcamActive && 
-//                                      !isProcessingPayment && (
-//                                       <button
-//                                         className="checkin-btn"
-//                                         onClick={() => startWebcamForCheckin(booking.id)}
-//                                       >
-//                                         <Camera size={16} />
-//                                         Check-in
-//                                       </button>
-//                                     )}
-
-//                                     {/* Checkout Button - Only show for active bookings with check-in but no checkout */}
-//                                     {displayStatus === 'active' && 
-//                                      hasCheckedIn && 
-//                                      !hasCheckedOut && 
-//                                      !bookingState.webcamActive && 
-//                                      !isProcessingPayment && (
-//                                       <button
-//                                         className="checkout-btn"
-//                                         onClick={() => startWebcamForCheckout(booking.id)}
-//                                       >
-//                                         <Camera size={16} />
-//                                         Checkout
-//                                       </button>
-//                                     )}
-
-//                                     {/* Webcam Section */}
-//                                     {bookingState.webcamActive && bookingState.webcamMode !== 'zonepicker' && (
-//                                       <div className="webcam-container">
-//                                         <h5>
-//                                           {bookingState.webcamMode === 'checkin' 
-//                                             ? 'Capturing Check-in Vehicle Number Plate' 
-//                                             : 'Capturing Checkout Vehicle Number Plate'}
-//                                         </h5>
-//                                         {bookingState.webcamError && (
-//                                           <div className="error-message">{bookingState.webcamError}</div>
-//                                         )}
-//                                         <video
-//                                           ref={el => (videoRefs.current[booking.id] = el)}
-//                                           autoPlay
-//                                           playsInline
-//                                           className="webcam-video"
-//                                         />
-//                                         <canvas
-//                                           ref={el => (canvasRefs.current[booking.id] = el)}
-//                                           style={{ display: 'none' }}
-//                                         />
-//                                         <button
-//                                           className="capture-btn"
-//                                           onClick={() => 
-//                                             bookingState.webcamMode === 'checkin' 
-//                                               ? captureCheckinImage(booking.id) 
-//                                               : captureCheckoutImage(booking.id)
-//                                           }
-//                                         >
-//                                           Capture
-//                                         </button>
-//                                       </div>
-//                                     )}
-
-                                   
-//                                   </div>
-//                                 </div>
-//                               );
-//                             })}
-//                           </div>
-//                         )}
-//                       </div>
-//                     )}
-//                   </div>
-//                 ))
-//               ) : (
-//                 <div className="no-activity">
-//                   <p>No recent activity to display</p>
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-//         </>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default UsersList;
-
-
-
-
-// import React, { useState, useEffect, useRef } from 'react';
-// import { rtdb } from '../firebase';
-// import { ref, onValue, update, get, set } from 'firebase/database';
-// import { db } from '../firebase';
-// import { collection, getDocs } from 'firebase/firestore';
-// import { 
-//   Users, ArrowLeft, Clock, MapPin, Activity, ChevronRight, 
-//   CreditCard, Banknote, AlertTriangle, CheckCircle, Camera,
-//   Bike, Truck, Car
-// } from 'lucide-react';
-// import '../styles/UsersList.css';
-
-// const UsersList = ({ onBack, recentActivity = [] }) => {
-//   const [users, setUsers] = useState([]);
-//   const [allBookings, setAllBookings] = useState([]);
-//   const [loading, setLoading] = useState(true);
+//   const [loading, setLoading] = useState(false);
 //   const [error, setError] = useState('');
 //   const [expandedActivity, setExpandedActivity] = useState(null);
 //   const [userBookings, setUserBookings] = useState([]);
 //   const [activityError, setActivityError] = useState(null);
-//   const [loadingBookings, setLoadingBookings] = useState(true);
-//   const [bookingStates, setBookingStates] = useState({});
-//   const videoRefs = useRef({});
-//   const canvasRefs = useRef({});
-//   const [paymentProcessing, setPaymentProcessing] = useState({});
-  
-//   // Add state for corrected activity data
-//   const [correctedActivity, setCorrectedActivity] = useState([]);
-  
-//   // Add state for verification results
-//   const [verificationResults, setVerificationResults] = useState({});
-
-//   // Add state for firebase status values
+//   const [loadingBookings, setLoadingBookings] = useState(false);
 //   const [connectionStatus, setConnectionStatus] = useState(0);
-  
-//   // Track occupied slots instead of just activeSlot
 //   const [occupiedSlots, setOccupiedSlots] = useState([]);
+//   const [statusMessage, setStatusMessage] = useState('');
+//   const [firebaseStatus, setFirebaseStatus] = useState(0);
+  
+//   // Camera and simulation states
+//   const [activeCameras, setActiveCameras] = useState({});
+//   const [detectedPlates, setDetectedPlates] = useState({});
+//   const [cameraTimers, setCameraTimers] = useState({});
+//   const [plateDetectionInterval, setPlateDetectionInterval] = useState({});
+//   const [wrongPlateDetections, setWrongPlateDetections] = useState({});
+//   const [cameraStartTimes, setCameraStartTimes] = useState({});
+//   const [simulationTimers, setSimulationTimers] = useState({});
+//   const [simulationStatus, setSimulationStatus] = useState({});
   
 //   const [zones, setZones] = useState([
 //     { id: 1, name: 'Zone A', type: 'Car', occupied: false },
@@ -1511,966 +55,36 @@
 //     { id: 3, name: 'Zone C', type: 'Car', occupied: false }
 //   ]);
 
-//   // Razorpay Test API Key (replace with your own from Razorpay Dashboard in Test Mode)
-//   const RAZORPAY_KEY_ID = 'rzp_test_vg2WzWGNEHJpgj'; // This is a dummy test key for example purposes
+//   // Refs for camera functionality
+//   const videoRefs = useRef({});
+//   const canvasRefs = useRef({});
+//   const streamRefs = useRef({});
+//   const cleanupFlags = useRef({});
 
-//   // Listen for Firebase data changes
+//   // Constants
+//   const authorizedPlates = [
+//     'KA-01-HB-1234',
+//     'KA-05-MN-5678', 
+//     'KA-02-CD-9012',
+//     'KA19EQ1316' // Hardcoded simulation plate
+//   ];
+
+//   const allSimulatedPlates = [
+//     ...authorizedPlates,
+//     'KA-03-EF-7890',
+//     'KA-04-GH-2468',
+//     'TN-09-AB-3456',
+//     'MH-12-CD-7890'
+//   ];
+
+//   // Initialize with sample data
 //   useEffect(() => {
-//     // Listen for connection_status
-//     const connectionRef = ref(rtdb, 'connection_status');
-//     const connectionUnsubscribe = onValue(connectionRef, (snapshot) => {
-//       if (snapshot.exists()) {
-//         const status = snapshot.val();
-//         setConnectionStatus(parseInt(status));
-//       }
-//     });
-
-//     // Listen for occupied slots
-//     const slotsRef = ref(rtdb, 'occupied_slots');
-//     const slotsUnsubscribe = onValue(slotsRef, (snapshot) => {
-//       if (snapshot.exists()) {
-//         try {
-//           // Parse the occupied slots from Firebase
-//           const slotsData = snapshot.val();
-//           const occupiedSlotsList = Array.isArray(slotsData) ? 
-//             slotsData : 
-//             typeof slotsData === 'string' ? 
-//               JSON.parse(slotsData) : 
-//               [];
-          
-//           setOccupiedSlots(occupiedSlotsList);
-          
-//           // Update zones based on the occupied slots
-//           setZones(prevZones => 
-//             prevZones.map(zone => ({
-//               ...zone,
-//               occupied: occupiedSlotsList.includes(zone.id)
-//             }))
-//           );
-//         } catch (error) {
-//           console.error("Error parsing occupied slots:", error);
-//         }
-//       } else {
-//         // If no data exists, create initial empty array
-//         set(slotsRef, JSON.stringify([]));
-//         setOccupiedSlots([]);
-//       }
-//     });
-
-//     // For backwards compatibility, also listen to the old slot value
-//     const slotRef = ref(rtdb, 'slot');
-//     const slotUnsubscribe = onValue(slotRef, (snapshot) => {
-//       if (snapshot.exists()) {
-//         // We'll handle both the new and old systems during transition
-//         try {
-//           const slotValue = snapshot.val();
-//           const slotNumber = parseInt(slotValue.replace(/"/g, ''));
-          
-//           if (!isNaN(slotNumber)) {
-//             // Check if this slot is already in our occupied slots
-//             if (!occupiedSlots.includes(slotNumber)) {
-//               // Add this slot to occupied slots
-//               const updatedSlots = [...occupiedSlots, slotNumber];
-              
-//               // Update the new occupied_slots node in Firebase
-//               const slotsRef = ref(rtdb, 'occupied_slots');
-//               set(slotsRef, JSON.stringify(updatedSlots));
-//             }
-//           }
-//         } catch (error) {
-//           console.error("Error handling legacy slot:", error);
-//         }
-//       }
-//     });
-
-//     return () => {
-//       connectionUnsubscribe();
-//       slotsUnsubscribe();
-//       slotUnsubscribe();
-//     };
-//   }, [occupiedSlots]);
-
-//   // Fetch all users from Firestore
-//   useEffect(() => {
-//     const fetchUsers = async () => {
-//       try {
-//         const usersCollection = collection(db, 'users');
-//         const usersSnapshot = await getDocs(usersCollection);
-//         const usersList = usersSnapshot.docs.map(doc => ({
-//           id: doc.id,
-//           ...doc.data()
-//         }));
-//         setUsers(usersList);
-//       } catch (error) {
-//         console.error("Error fetching users:", error);
-//         // setError('Failed to load users. Please refresh the page.');
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchUsers();
+//     setUserBookings(allBookings);
+//     setLoading(false);
+//     setLoadingBookings(false);
 //   }, []);
 
-//   // Process recent activity data to ensure correct user names
-//   useEffect(() => {
-//     if (recentActivity.length > 0 && users.length > 0) {
-//       // Process activity data to ensure user names are correct
-//       const processedActivity = recentActivity.map(activity => {
-//         // If the activity has a userId, find the corresponding user
-//         if (activity.userId) {
-//           const user = users.find(u => u.id === activity.userId);
-//           if (user) {
-//             return {
-//               ...activity,
-//               user: user.name // Use the correct user name from users collection
-//             };
-//           }
-//         }
-//         return activity;
-//       });
-      
-//       setCorrectedActivity(processedActivity);
-//     } else {
-//       setCorrectedActivity(recentActivity);
-//     }
-//   }, [recentActivity, users]);
-
-//   // Fetch ALL bookings from the Realtime Database
-//   useEffect(() => {
-//     const fetchAllBookings = () => {
-//       setLoadingBookings(true);
-//       try {
-//         const bookingsRef = ref(rtdb, 'bookings');
-        
-//         const unsubscribe = onValue(bookingsRef, (snapshot) => {
-//           const bookingsList = [];
-//           if (snapshot.exists()) {
-//             snapshot.forEach((childSnapshot) => {
-//               const bookingData = childSnapshot.val();
-//               bookingsList.push({
-//                 id: childSnapshot.key,
-//                 ...bookingData,
-//                 bookingTime: bookingData.bookingTime
-//                   ? new Date(bookingData.bookingTime)
-//                   : null,
-//                 startTime: bookingData.startTime
-//                   ? new Date(bookingData.startTime)
-//                   : null,
-//                 endTime: bookingData.endTime
-//                   ? new Date(bookingData.endTime)
-//                   : null,
-//               });
-//             });
-
-//             bookingsList.sort((a, b) => {
-//               const timeA = a.bookingTime ? a.bookingTime.getTime() : 0;
-//               const timeB = b.bookingTime ? b.bookingTime.getTime() : 0;
-//               return timeB - timeA;
-//             });
-//           }
-
-//           setAllBookings(bookingsList);
-//           setLoadingBookings(false);
-//         }, (err) => {
-//           console.error("Error fetching all bookings:", err);
-//           setError('Failed to load booking data. Please try again later.');
-//           setLoadingBookings(false);
-//         });
-
-//         return () => unsubscribe();
-//       } catch (err) {
-//         console.error("Error setting up bookings listener:", err);
-//         setError('Failed to load booking data. Please try again later.');
-//         setLoadingBookings(false);
-//       }
-//     };
-
-//     fetchAllBookings();
-//   }, []);
-
-//   const extractBookingInfo = (actionText) => {
-//     const spaceMatch = actionText.match(/Space\s+#?(\d+)/);
-//     const locationMatch = actionText.match(/at\s+([^,]+)(?:\s+at\s+\d+\/\d+\/\d+|$)/);
-//     const dateTimeMatch = actionText.match(/(\d+\/\d+\/\d+,\s+\d+:\d+:\d+\s+[AP]M)/);
-    
-//     return {
-//       location: locationMatch ? locationMatch[1].trim() : null,
-//       spaceId: spaceMatch ? spaceMatch[1].trim() : null,
-//       dateTime: dateTimeMatch ? dateTimeMatch[1].trim() : null
-//     };
-//   };
-
-//   // Handle zone click
-//   const handleZoneClick = (zoneId) => {
-//     // Find corresponding bookings for this zone
-//     const zoneBookings = allBookings.filter(booking => {
-//       if (zoneId === 1 && booking.vehicleType === 2) return true;  // Zone A - Bikes
-//       if (zoneId === 2 && booking.vehicleType === 3) return true;  // Zone B - Autos
-//       if (zoneId === 3 && booking.vehicleType === 4) return true;  // Zone C - Cars
-//       return false;
-//     });
-    
-//     // If this zone is occupied, try to find active booking and show details
-//     if (occupiedSlots.includes(zoneId) && connectionStatus > 0) {
-//       const activeBooking = zoneBookings.find(booking => 
-//         booking.status === 'active' || booking.status === 'confirmed'
-//       );
-      
-//       if (activeBooking) {
-//         // Try to find matching activity
-//         const activity = correctedActivity.find(a => 
-//           a.action && a.action.includes(`Space #${activeBooking.spaceId}`)
-//         );
-        
-//         if (activity) {
-//           handleActivityClick(activity);
-//         }
-//       }
-//     }
-//   };
-
-//   const handleActivityClick = (activity) => {
-//     if (expandedActivity === activity.id) {
-//       setExpandedActivity(null);
-//       setUserBookings([]);
-//       setActivityError(null);
-//       setBookingStates({});
-//       return;
-//     }
-
-//     setExpandedActivity(activity.id);
-//     setActivityError(null);
-//     setBookingStates({});
-    
-//     try {
-//       if (loadingBookings) {
-//         setActivityError("Still loading booking data. Please wait...");
-//         return;
-//       }
-
-//       if (allBookings.length === 0) {
-//         setActivityError("No booking data available.");
-//         return;
-//       }
-
-//       const { location, spaceId, dateTime } = extractBookingInfo(activity.action);
-//       const userObj = users.find(user => user.name === activity.user);
-//       const userId = userObj ? userObj.id : null;
-      
-//       let filteredBookings = [];
-      
-//       if (userId && spaceId) {
-//         filteredBookings = allBookings.filter(booking => 
-//           booking.userId === userId && 
-//           String(booking.spaceId) === String(spaceId)
-//         );
-//       }
-      
-//       if (filteredBookings.length === 0 && (spaceId || location)) {
-//         filteredBookings = allBookings.filter(booking => {
-//           const spaceMatch = spaceId ? String(booking.spaceId) === String(spaceId) : false;
-//           const locationMatch = location && booking.parkingLotName ? 
-//             booking.parkingLotName.includes(location) : false;
-          
-//           return spaceMatch || locationMatch;
-//         });
-//       }
-      
-//       if (filteredBookings.length === 0 && userId) {
-//         filteredBookings = allBookings.filter(booking => booking.userId === userId);
-//       }
-      
-//       if (filteredBookings.length === 0) {
-//         const firstName = activity.user.split(' ')[0];
-        
-//         filteredBookings = allBookings.filter(booking => {
-//           const bookingValues = Object.values(booking).map(val => 
-//             typeof val === 'string' ? val.toLowerCase() : ''
-//           );
-          
-//           const hasUserName = bookingValues.some(val => 
-//             val.includes(firstName.toLowerCase())
-//           );
-          
-//           let timeMatch = false;
-//           if (dateTime) {
-//             const activityTime = new Date(dateTime);
-//             const bookingTime = booking.bookingTime;
-//             if (bookingTime) {
-//               timeMatch = Math.abs(bookingTime - activityTime) < 1000 * 60 * 60;
-//             }
-//           }
-          
-//           return hasUserName || timeMatch;
-//         });
-//       }
-      
-//       setUserBookings(filteredBookings);
-      
-//       if (filteredBookings.length === 0) {
-//         setActivityError(`No bookings found related to this activity for ${activity.user}.`);
-//       }
-//     } catch (error) {
-//       console.error("Error processing activity:", error);
-//       setActivityError('Failed to process user activity data: ' + error.message);
-//     }
-//   };
-
-//   // Function to start webcam for check-in
-//   const startWebcamForCheckin = async (bookingId) => {
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         webcamActive: true,
-//         webcamMode: 'checkin',
-//         webcamError: null,
-//         checkinVehicleNumber: null,
-//         successMessage: null,
-//         zoneSelected: false,
-//       }
-//     }));
-
-//     try {
-//       const stream = await navigator.mediaDevices.getUserMedia({ 
-//         video: { 
-//           width: { ideal: 1280 },
-//           height: { ideal: 720 },
-//           facingMode: "environment" // Prefer back camera if available
-//         } 
-//       });
-      
-//       if (videoRefs.current[bookingId]) {
-//         videoRefs.current[bookingId].srcObject = stream;
-//         videoRefs.current[bookingId].onloadedmetadata = () => {
-//           videoRefs.current[bookingId].play();
-//         };
-//       }
-//     } catch (error) {
-//       console.error("Error accessing webcam:", error);
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           webcamActive: false,
-//           webcamError: 'Failed to access camera. Please ensure camera permissions are granted.'
-//         }
-//       }));
-//     }
-//   };
-
-//   // Function to start webcam for checkout
-//   const startWebcamForCheckout = async (bookingId) => {
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         webcamActive: true,
-//         webcamMode: 'checkout',
-//         webcamError: null,
-//         checkoutVehicleNumber: null,
-//         successMessage: null,
-//       }
-//     }));
-
-//     try {
-//       const stream = await navigator.mediaDevices.getUserMedia({ 
-//         video: { 
-//           width: { ideal: 1280 },
-//           height: { ideal: 720 },
-//           facingMode: "environment" // Prefer back camera if available
-//         } 
-//       });
-      
-//       if (videoRefs.current[bookingId]) {
-//         videoRefs.current[bookingId].srcObject = stream;
-//         videoRefs.current[bookingId].onloadedmetadata = () => {
-//           videoRefs.current[bookingId].play();
-//         };
-//       }
-//     } catch (error) {
-//       console.error("Error accessing webcam:", error);
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           webcamActive: false,
-//           webcamError: 'Failed to access camera. Please ensure camera permissions are granted.'
-//         }
-//       }));
-//     }
-//   };
-
-//   // Function to capture image for check-in
-//   const captureCheckinImage = (bookingId) => {
-//     const video = videoRefs.current[bookingId];
-//     const canvas = canvasRefs.current[bookingId];
-    
-//     if (!video || !canvas) {
-//       console.error('Video or canvas reference not found.');
-//       return;
-//     }
-    
-//     const context = canvas.getContext('2d');
-    
-//     canvas.width = video.videoWidth;
-//     canvas.height = video.videoHeight;
-//     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-//     // Save the captured image data URL
-//     const imageDataUrl = canvas.toDataURL('image/jpeg');
-    
-//     // Stop the webcam stream
-//     const stream = video.srcObject;
-//     if (stream) {
-//       const tracks = stream.getTracks();
-//       tracks.forEach(track => track.stop());
-//       video.srcObject = null;
-//     }
-    
-//     // In a real app, you would send the image to a backend OCR service
-//     // For this example, we'll generate a random vehicle number
-//     const stateCode = ['KA', 'MH', 'TN', 'AP', 'DL'][Math.floor(Math.random() * 5)];
-//     const regionCode = `${Math.floor(1 + Math.random() * 99)}`.padStart(2, '0');
-//     const letterCode = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + 
-//                       String.fromCharCode(65 + Math.floor(Math.random() * 26));
-//     const numberCode = `${Math.floor(1000 + Math.random() * 9000)}`;
-    
-//     const simulatedVehicleNumber = `${stateCode}-${regionCode}-${letterCode}-${numberCode}`;
-    
-//     // Update state
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         webcamActive: true, // Keep webcam active for zone selection
-//         webcamMode: 'zonepicker',
-//         checkinVehicleNumber: simulatedVehicleNumber,
-//         checkinImageData: imageDataUrl,
-//         successMessage: null,
-//       }
-//     }));
-//   };
-
-//   // Function to select vehicle zone
-//   const selectZone = (bookingId, zoneType) => {
-//     let vehicleType;
-//     let slotNumber;
-    
-//     switch (zoneType) {
-//       case 'A':
-//         vehicleType = 2; // Bike
-//         slotNumber = 1;
-//         break;
-//       case 'B':
-//         vehicleType = 3; // Auto
-//         slotNumber = 2;
-//         break;
-//       case 'C':
-//         vehicleType = 4; // Car
-//         slotNumber = 3;
-//         break;
-//       default:
-//         vehicleType = null;
-//         slotNumber = null;
-//     }
-    
-//     // Update state
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         webcamActive: false,
-//         webcamMode: null,
-//         vehicleType: vehicleType,
-//         zoneSelected: true,
-//         successMessage: 'Check-in successful! Vehicle number plate captured.',
-//       }
-//     }));
-    
-//     // Update Firebase with check-in data and slot information
-//     updateBookingWithCheckinData(
-//       bookingId, 
-//       bookingStates[bookingId].checkinVehicleNumber, 
-//       bookingStates[bookingId].checkinImageData, 
-//       vehicleType,
-//       slotNumber
-//     );
-//   };
-
-//   // Function to capture image for checkout
-//   const captureCheckoutImage = (bookingId) => {
-//     const video = videoRefs.current[bookingId];
-//     const canvas = canvasRefs.current[bookingId];
-    
-//     if (!video || !canvas) {
-//       console.error('Video or canvas reference not found.');
-//       return;
-//     }
-    
-//     const context = canvas.getContext('2d');
-    
-//     canvas.width = video.videoWidth;
-//     canvas.height = video.videoHeight;
-//     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-//     // Save the captured image data URL
-//     const imageDataUrl = canvas.toDataURL('image/jpeg');
-    
-//     // Stop the webcam stream
-//     const stream = video.srcObject;
-//     if (stream) {
-//       const tracks = stream.getTracks();
-//       tracks.forEach(track => track.stop());
-//       video.srcObject = null;
-//     }
-    
-//     // In a real app, you would send the image to a backend OCR service
-//     // For this example, we'll generate a random vehicle number
-//     const stateCode = ['KA', 'MH', 'TN', 'AP', 'DL'][Math.floor(Math.random() * 5)];
-//     const regionCode = `${Math.floor(1 + Math.random() * 99)}`.padStart(2, '0');
-//     const letterCode = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + 
-//                       String.fromCharCode(65 + Math.floor(Math.random() * 26));
-//     const numberCode = `${Math.floor(1000 + Math.random() * 9000)}`;
-    
-//     const simulatedVehicleNumber = `${stateCode}-${regionCode}-${letterCode}-${numberCode}`;
-    
-//     // Get the booking to access check-in vehicle number
-//     const booking = userBookings.find(b => b.id === bookingId);
-//     const checkinVehicleNumber = booking.checkinVehicleNumber || 
-//       (bookingStates[bookingId] && bookingStates[bookingId].checkinVehicleNumber);
-    
-//     // For demo purposes, let's determine match with a random result (50% chance of match)
-//     // In a real application, this would be an actual comparison using computer vision
-//     const isMatch = Math.random() > 0.5;
-//     const matchValue = isMatch ? 1 : 0;
-    
-//     // Set verification result
-//     setVerificationResults({
-//       ...verificationResults,
-//       [bookingId]: {
-//         isMatch,
-//         matchValue,
-//         message: isMatch 
-//           ? 'Vehicle number plate verified successfully!' 
-//           : 'Vehicle number plate does not match check-in record!',
-//         checkoutVehicleNumber: simulatedVehicleNumber,
-//         checkoutImageData: imageDataUrl
-//       }
-//     });
-    
-//     // Update state
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         webcamActive: false,
-//         webcamMode: null,
-//         checkoutVehicleNumber: simulatedVehicleNumber,
-//         checkoutImageData: imageDataUrl,
-//         successMessage: null, // We'll use verification results instead
-//       }
-//     }));
-    
-//     // Update Firebase with verification result
-//     updateBookingWithCheckoutData(
-//       bookingId, 
-//       simulatedVehicleNumber, 
-//       imageDataUrl, 
-//       matchValue
-//     );
-//   };
-
-//   // Function to update Firebase with check-in data - FIXED
-//   const updateBookingWithCheckinData = async (bookingId, vehicleNumber, imageData, vehicleType, slotNumber) => {
-//     try {
-//       // First update the booking with check-in data
-//       const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-//       await update(bookingRef, { 
-//         checkinVehicleNumber: vehicleNumber,
-//         checkinImageData: imageData,
-//         vehicleType: vehicleType,
-//         checkedIn: true,
-//         checkinTime: new Date().toISOString()
-//       });
-      
-//       // Add this slot to occupied slots if not already present
-//       if (!occupiedSlots.includes(slotNumber)) {
-//         const updatedOccupiedSlots = [...occupiedSlots, slotNumber];
-        
-//         // Update occupied_slots in Firebase
-//         const slotsRef = ref(rtdb, 'occupied_slots');
-//         await set(slotsRef, JSON.stringify(updatedOccupiedSlots));
-        
-//         // For backward compatibility, also update the slot value
-//         const slotRef = ref(rtdb, 'slot');
-//         await set(slotRef, JSON.stringify(slotNumber.toString()));
-//       }
-      
-//       // Increment connection status
-//       const connectionRef = ref(rtdb, 'connection_status');
-//       const connectionSnapshot = await get(connectionRef);
-//       const currentValue = connectionSnapshot.exists() ? parseInt(connectionSnapshot.val()) : 0;
-//       await set(connectionRef, currentValue + 1);
-      
-//       // Update local state
-//       setUserBookings(prevBookings =>
-//         prevBookings.map(booking =>
-//           booking.id === bookingId
-//             ? { 
-//                 ...booking, 
-//                 checkinVehicleNumber: vehicleNumber,
-//                 checkinImageData: imageData,
-//                 vehicleType: vehicleType,
-//                 checkedIn: true,
-//                 checkinTime: new Date()
-//               }
-//             : booking
-//         )
-//       );
-//     } catch (error) {
-//       console.error("Error updating check-in data in Firebase:", error);
-//       setActivityError('Failed to update check-in data in booking.');
-      
-//       // Reset check-in data in local state
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           webcamActive: false,
-//           webcamMode: null,
-//           checkinVehicleNumber: null,
-//           checkinImageData: null,
-//           vehicleType: null,
-//           zoneSelected: false,
-//         }
-//       }));
-//     }
-//   };
-
-//   // Function to update Firebase with checkout data
-//   const updateBookingWithCheckoutData = async (bookingId, vehicleNumber, imageData, matchValue) => {
-//     try {
-//       // Get the booking to identify which slot number to remove
-//       const booking = userBookings.find(b => b.id === bookingId);
-//       const slotNumber = booking.spaceId;
-      
-//       const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-//       await update(bookingRef, { 
-//         checkoutVehicleNumber: vehicleNumber,
-//         checkoutImageData: imageData,
-//         verificationResult: matchValue,
-//         checkedOut: true,
-//         checkoutTime: new Date().toISOString()
-//       });
-      
-//       // Remove this slot from occupied slots
-//       if (slotNumber && occupiedSlots.includes(parseInt(slotNumber))) {
-//         const updatedOccupiedSlots = occupiedSlots.filter(id => id !== parseInt(slotNumber));
-        
-//         // Update occupied_slots in Firebase
-//         const slotsRef = ref(rtdb, 'occupied_slots');
-//         await set(slotsRef, JSON.stringify(updatedOccupiedSlots));
-        
-//         // Decrement connection status
-//         const connectionRef = ref(rtdb, 'connection_status');
-//         const connectionSnapshot = await get(connectionRef);
-//         const currentValue = connectionSnapshot.exists() ? parseInt(connectionSnapshot.val()) : 0;
-//         if (currentValue > 0) {
-//           await set(connectionRef, currentValue - 1);
-//         }
-//       }
-      
-//       // Update local state
-//       setUserBookings(prevBookings =>
-//         prevBookings.map(booking =>
-//           booking.id === bookingId
-//             ? { 
-//                 ...booking, 
-//                 checkoutVehicleNumber: vehicleNumber,
-//                 checkoutImageData: imageData,
-//                 verificationResult: matchValue,
-//                 checkedOut: true,
-//                 checkoutTime: new Date()
-//               }
-//             : booking
-//         )
-//       );
-//     } catch (error) {
-//       console.error("Error updating checkout data in Firebase:", error);
-//       setActivityError('Failed to update checkout data in booking.');
-//     }
-//   };
-
-//   const handlePaymentMethod = async (bookingId, method) => {
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         paymentMethod: method,
-//         successMessage: null, // Reset success message
-//       }
-//     }));
-
-//     if (method === 'cash') {
-//       processCashPayment(bookingId);
-//     } else if (method === 'razorpay') {
-//       await initiateRazorpayPayment(bookingId);
-//     }
-//   };
-
-//   const processCashPayment = async (bookingId) => {
-//     setPaymentProcessing(prev => ({ ...prev, [bookingId]: true }));
-//     try {
-//       const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-//       await update(bookingRef, { 
-//         status: 'completed',
-//         paymentMethod: 'cash',
-//         endTime: new Date().toISOString(),
-//         paidAt: new Date().toISOString()
-//       });
-      
-//       setUserBookings(prevBookings =>
-//         prevBookings.map(booking =>
-//           booking.id === bookingId
-//             ? { 
-//                 ...booking, 
-//                 status: 'completed', 
-//                 paymentMethod: 'cash', 
-//                 endTime: new Date(),
-//                 paidAt: new Date()
-//               }
-//             : booking
-//         )
-//       );
-      
-//       // Set success message for this booking
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           webcamActive: false,
-//           webcamMode: null,
-//           successMessage: 'Payment successful!', // Set per-booking success message
-//         }
-//       }));
-//     } catch (error) {
-//       console.error("Error updating booking status for cash payment:", error);
-//       setActivityError('Failed to process cash payment. Please try again.');
-      
-//       // Reset payment method
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           paymentMethod: null,
-//         }
-//       }));
-//     } finally {
-//       setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//     }
-//   };
-
-//   const loadRazorpayScript = () => {
-//     return new Promise((resolve) => {
-//       if (window.Razorpay) {
-//         resolve(true);
-//         return;
-//       }
-      
-//       const script = document.createElement('script');
-//       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-//       script.async = true;
-      
-//       script.onload = () => {
-//         console.log("Razorpay SDK loaded successfully");
-//         resolve(true);
-//       };
-      
-//       script.onerror = () => {
-//         console.error("Failed to load Razorpay SDK");
-//         resolve(false);
-//       };
-      
-//       document.body.appendChild(script);
-//     });
-//   };
-
-//   const initiateRazorpayPayment = async (bookingId) => {
-//     setPaymentProcessing(prev => ({ ...prev, [bookingId]: true }));
-//     try {
-//       // Load Razorpay script if not already loaded
-//       const razorpayLoaded = await loadRazorpayScript();
-//       if (!razorpayLoaded) {
-//         setActivityError('Razorpay SDK failed to load. Please check your internet connection.');
-//         setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//         setBookingStates(prev => ({
-//           ...prev,
-//           [bookingId]: {
-//             ...prev[bookingId],
-//             paymentMethod: null,
-//           }
-//         }));
-//         return;
-//       }
-
-//       const booking = userBookings.find(b => b.id === bookingId);
-//       if (!booking) {
-//         setActivityError('Booking not found. Please try again.');
-//         setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//         return;
-//       }
-
-//       // Get user details for prefill
-//       const user = users.find(user => user.id === booking.userId) || {};
-      
-//       // Calculate parking duration in hours (for receipt)
-//       let durationText = 'Parking';
-//       if (booking.startTime && booking.endTime) {
-//         const durationMs = booking.endTime - booking.startTime;
-//         const diffHrs = Math.floor(durationMs / (1000 * 60 * 60));
-//         const diffMins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-//         durationText = `${diffHrs}h ${diffMins}m Parking`;
-//       }
-
-//       // Create a unique order ID for this transaction
-//       const orderIdPrefix = 'ord';
-//       const randomId = Math.random().toString(36).substring(2, 10);
-//       const orderId = `${orderIdPrefix}_${Date.now()}_${randomId}`;
-
-//       // Get amount from booking (default to 80 if not available)
-//       const amount = booking.amount || 80;
-
-//       const options = {
-//         key: RAZORPAY_KEY_ID,
-//         amount: amount * 100, // Amount in paise
-//         currency: 'INR',
-//         name: 'Smart Parking',
-//         description: `Payment for ${durationText} at ${booking.parkingLotName || 'Parking Lot'}`,
-//         order_id: orderId, // Normally you would create this on your server
-//         handler: function(response) {
-//           console.log("Payment successful", response);
-//           handleRazorpaySuccess(bookingId, response);
-//         },
-//         prefill: {
-//           name: user.name || 'Customer',
-//           email: user.email || '',
-//           contact: user.phone || '',
-//         },
-//         notes: {
-//           bookingId: booking.id,
-//           parkingLotName: booking.parkingLotName,
-//           spaceId: booking.spaceId,
-//           startTime: booking.startTime ? booking.startTime.toISOString() : '',
-//         },
-//         theme: {
-//           color: '#3b82f6', // Blue color matching your UI
-//         },
-//         modal: {
-//           ondismiss: function() {
-//             console.log('Payment dismissed');
-//             setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//             setBookingStates(prev => ({
-//               ...prev,
-//               [bookingId]: {
-//                 ...prev[bookingId],
-//                 paymentMethod: null,
-//               }
-//             }));
-//           }
-//         }
-//       };
-
-//       const razorpay = new window.Razorpay(options);
-      
-//       razorpay.on('payment.failed', function(response) {
-//         console.error('Payment failed', response.error);
-//         handleRazorpayFailure(bookingId, response.error);
-//       });
-      
-//       // Open Razorpay payment form
-//       razorpay.open();
-//     } catch (error) {
-//       console.error("Error initiating Razorpay payment:", error);
-//       setActivityError(`Failed to initiate payment: ${error.message}`);
-//       setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           paymentMethod: null,
-//         }
-//       }));
-//     }
-//   };
-
-//   const handleRazorpaySuccess = async (bookingId, paymentResponse) => {
-//     console.log("Processing successful payment", bookingId, paymentResponse);
-//     try {
-//       // Update booking in Firebase
-//       const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-//       await update(bookingRef, { 
-//         status: 'completed',
-//         paymentMethod: 'razorpay',
-//         paymentId: paymentResponse.razorpay_payment_id,
-//         orderId: paymentResponse.razorpay_order_id,
-//         paymentSignature: paymentResponse.razorpay_signature,
-//         endTime: new Date().toISOString(),
-//         paidAt: new Date().toISOString()
-//       });
-
-//       // Update local state
-//       setUserBookings(prevBookings =>
-//         prevBookings.map(booking =>
-//           booking.id === bookingId
-//             ? { 
-//                 ...booking, 
-//                 status: 'completed', 
-//                 paymentMethod: 'razorpay',
-//                 paymentId: paymentResponse.razorpay_payment_id,
-//                 endTime: new Date(),
-//                 paidAt: new Date()
-//               }
-//             : booking
-//         )
-//       );
-      
-//       // Set success message for this booking
-//       setBookingStates(prev => ({
-//         ...prev,
-//         [bookingId]: {
-//           ...prev[bookingId],
-//           webcamActive: false,
-//           webcamMode: null,
-//           paymentMethod: null,
-//           successMessage: 'Payment successful!', // Set per-booking success message
-//         }
-//       }));
-//     } catch (error) {
-//       console.error("Error updating booking after payment:", error);
-//       setActivityError('Payment was successful, but we had trouble updating your booking. Please contact support.');
-//     } finally {
-//       setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-//     }
-//   };
-
-//   const handleRazorpayFailure = (bookingId, error) => {
-//     console.error("Payment failed", error);
-    
-//     setActivityError(`Payment failed: ${error.description || 'Unknown error occurred'}`);
-//     setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-    
-//     // Reset payment method selection
-//     setBookingStates(prev => ({
-//       ...prev,
-//       [bookingId]: {
-//         ...prev[bookingId],
-//         paymentMethod: null,
-//       }
-//     }));
-//   };
-
+//   // Helper functions
 //   const formatDateTime = (date) => {
 //     if (!date) return 'N/A';
 //     return date.toLocaleString('en-US', {
@@ -2484,19 +98,6 @@
 //     });
 //   };
 
-//   const getStatusClass = (status) => {
-//     switch (status) {
-//       case 'active':
-//         return 'status-active';
-//       case 'completed':
-//         return 'status-completed';
-//       case 'cancelled':
-//         return 'status-cancelled';
-//       default:
-//         return '';
-//     }
-//   };
-
 //   const getTimeDifference = (start, end) => {
 //     if (!start || !end) return 'N/A';
 //     const diffMs = end - start;
@@ -2505,498 +106,1502 @@
 //     return `${diffHrs}h ${diffMins}m`;
 //   };
 
-//   const determineBookingStatus = (booking) => {
-//     const now = new Date();
-//     const startTime = booking.startTime ? new Date(booking.startTime) : null;
-//     const endTime = booking.endTime ? new Date(booking.endTime) : null;
+//   const formatRemainingTime = useCallback((ms) => {
+//     const minutes = Math.floor(ms / 60000);
+//     const seconds = Math.floor((ms % 60000) / 1000);
+//     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+//   }, []);
 
-//     if (booking.status === 'cancelled') {
-//       return 'cancelled';
-//     } else if (booking.status === 'completed') {
-//       return 'completed';
-//     } else if (startTime && endTime) {
-//       if (now < startTime) {
-//         return 'active';
-//       } else if (now >= startTime && now <= endTime) {
-//         return 'active';
-//       } else if (now > endTime) {
-//         return 'completed';
+//   const getRemainingTime = useCallback((bookingId) => {
+//     const startTime = cameraStartTimes[bookingId];
+//     if (!startTime) return 0;
+    
+//     const now = new Date();
+//     const elapsed = now - startTime;
+//     const remaining = 300000 - elapsed; // 5 minutes - elapsed
+    
+//     return Math.max(0, remaining);
+//   }, [cameraStartTimes]);
+
+//   const getSimulationProgress = useCallback((bookingId) => {
+//     const simulation = simulationStatus[bookingId];
+//     if (!simulation) return null;
+    
+//     const now = new Date();
+//     const elapsed = now - simulation.startTime;
+    
+//     if (simulation.phase === 'waiting_checkin') {
+//       const timeToCheckin = 20000 - elapsed; // 20 seconds
+//       if (timeToCheckin > 0) {
+//         return {
+//           phase: 'waiting_checkin',
+//           timeRemaining: timeToCheckin,
+//           message: `Check-in in ${Math.ceil(timeToCheckin / 1000)}s`
+//         };
+//       }
+//     } else if (simulation.phase === 'checkin') {
+//       const timeToCheckout = 140000 - elapsed; // 2m20s total
+//       if (timeToCheckout > 0) {
+//         return {
+//           phase: 'waiting_checkout',
+//           timeRemaining: timeToCheckout,
+//           message: `Checkout in ${Math.ceil(timeToCheckout / 1000)}s`
+//         };
 //       }
 //     }
+    
+//     return null;
+//   }, [simulationStatus]);
+
+//   const determineBookingStatus = useCallback((booking) => {
+//     if (!booking) return 'active';
+    
+//     const bookingId = booking.id;
+//     const simulation = simulationStatus[bookingId];
+//     const detectedPlate = detectedPlates[bookingId];
+    
+//     if (simulation?.completed || (detectedPlate?.isSimulated && detectedPlate?.checkoutTime)) {
+//       return 'completed';
+//     }
+    
+//     if (detectedPlate?.isSimulated && detectedPlate?.checkinTime && !detectedPlate?.checkoutTime) {
+//       return 'active';
+//     }
+    
 //     return booking.status || 'active';
-//   };
+//   }, [simulationStatus, detectedPlates]);
 
-//   // Helper function to get vehicle type label
-//   const getVehicleTypeLabel = (type) => {
-//     switch (type) {
-//       case 2:
-//         return 'Car';
-//       case 3:
-//         return 'Car';
-//       case 4:
-//         return 'Car';
-//       default:
-//         return 'Not specified';
+//   // Core camera functions
+//   const captureImageFromVideo = useCallback((bookingId) => {
+//     const video = videoRefs.current[bookingId];
+//     const canvas = canvasRefs.current[bookingId];
+    
+//     if (!video || !canvas) return null;
+    
+//     const context = canvas.getContext('2d');
+//     canvas.width = video.videoWidth || 640;
+//     canvas.height = video.videoHeight || 480;
+    
+//     try {
+//       context.drawImage(video, 0, 0, canvas.width, canvas.height);
+//       return canvas.toDataURL('image/jpeg');
+//     } catch (error) {
+//       console.error('Error capturing image:', error);
+//       return null;
 //     }
-//   };
+//   }, []);
 
-//   // Helper function to get vehicle type icon
-//   const getVehicleTypeIcon = (type) => {
-//     switch (type) {
-//       case 2:
-//         return <Car size={16} />;
-//       case 3:
-//         return <Truck size={16} />;
-//       case 4:
-//         return <Car size={16} />;
-//       default:
-//         return <Car size={16} />;
+//   // Simulation functions
+//   const simulateCheckin = useCallback(async (bookingId) => {
+//     const hardcodedPlate = 'KA19EQ1316';
+    
+//     console.log(`🎬 SIMULATION: Starting check-in for booking ${bookingId}`);
+    
+//     setSimulationStatus(prev => ({
+//       ...prev,
+//       [bookingId]: {
+//         ...prev[bookingId],
+//         phase: 'checkin',
+//         plateNumber: hardcodedPlate,
+//         checkinTime: new Date()
+//       }
+//     }));
+    
+//     setActiveCameras(prev => ({
+//       ...prev,
+//       [bookingId]: {
+//         ...prev[bookingId],
+//         simulatingCheckin: true,
+//         simulationPlate: hardcodedPlate
+//       }
+//     }));
+    
+//     const imageData = captureImageFromVideo(bookingId) || 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD//2Q=';
+    
+//     setStatusMessage(`🎬 SIMULATION: Check-in successful! Vehicle ${hardcodedPlate} detected at ${new Date().toLocaleTimeString()}`);
+    
+//     setDetectedPlates(prev => ({
+//       ...prev,
+//       [bookingId]: {
+//         plateNumber: hardcodedPlate,
+//         checkinTime: new Date(),
+//         imageData: imageData,
+//         isAuthorized: true,
+//         isSimulated: true
+//       }
+//     }));
+    
+//     setActiveCameras(prev => ({
+//       ...prev,
+//       [bookingId]: {
+//         ...prev[bookingId],
+//         mode: 'waiting_checkout',
+//         checkedIn: true,
+//         simulatingCheckin: false,
+//         waitingForCheckout: true
+//       }
+//     }));
+    
+//     console.log(`🎬 SIMULATION: Check-in completed for booking ${bookingId}`);
+//   }, [captureImageFromVideo]);
+
+//   const simulateCheckout = useCallback(async (bookingId) => {
+//     const hardcodedPlate = 'KA19EQ1316';
+    
+//     console.log(`🎬 SIMULATION: Starting checkout for booking ${bookingId}`);
+    
+//     setSimulationStatus(prev => ({
+//       ...prev,
+//       [bookingId]: {
+//         ...prev[bookingId],
+//         phase: 'checkout',
+//         checkoutTime: new Date()
+//       }
+//     }));
+    
+//     setActiveCameras(prev => ({
+//       ...prev,
+//       [bookingId]: {
+//         ...prev[bookingId],
+//         simulatingCheckout: true,
+//         waitingForCheckout: false
+//       }
+//     }));
+    
+//     const imageData = captureImageFromVideo(bookingId) || 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD//2Q=';
+    
+//     setStatusMessage(`🎬 SIMULATION: Checkout successful! Vehicle ${hardcodedPlate} departed at ${new Date().toLocaleTimeString()}`);
+    
+//     setDetectedPlates(prev => ({
+//       ...prev,
+//       [bookingId]: {
+//         ...prev[bookingId],
+//         checkoutTime: new Date(),
+//         completed: true
+//       }
+//     }));
+    
+//     setSimulationStatus(prev => ({
+//       ...prev,
+//       [bookingId]: {
+//         ...prev[bookingId],
+//         phase: 'completed',
+//         completed: true
+//       }
+//     }));
+    
+//     setTimeout(() => {
+//       stopCameraMonitoring(bookingId);
+//       setStatusMessage(`🎬 SIMULATION: Complete! Booking ${bookingId} marked as completed.`);
+//       setTimeout(() => setStatusMessage(''), 5000);
+//     }, 2000);
+    
+//     console.log(`🎬 SIMULATION: Checkout completed for booking ${bookingId}`);
+//   }, [captureImageFromVideo]);
+
+//   const setupSimulationTimers = useCallback((bookingId) => {
+//     console.log(`🎬 SIMULATION: Setting up timers for booking ${bookingId}`);
+    
+//     setSimulationStatus(prev => ({
+//       ...prev,
+//       [bookingId]: {
+//         phase: 'waiting_checkin',
+//         startTime: new Date()
+//       }
+//     }));
+    
+//     const checkinTimer = setTimeout(() => {
+//       simulateCheckin(bookingId);
+//     }, 20000); // 20 seconds
+    
+//     const checkoutTimer = setTimeout(() => {
+//       simulateCheckout(bookingId);
+//     }, 140000); // 2 minutes 20 seconds
+    
+//     setSimulationTimers(prev => ({
+//       ...prev,
+//       [bookingId]: {
+//         checkinTimer,
+//         checkoutTimer
+//       }
+//     }));
+    
+//     console.log(`🎬 SIMULATION: Timers set for booking ${bookingId}`);
+//   }, [simulateCheckin, simulateCheckout]);
+
+//   const clearSimulationTimers = useCallback((bookingId) => {
+//     const timers = simulationTimers[bookingId];
+//     if (timers) {
+//       if (timers.checkinTimer) clearTimeout(timers.checkinTimer);
+//       if (timers.checkoutTimer) clearTimeout(timers.checkoutTimer);
+      
+//       setSimulationTimers(prev => {
+//         const newTimers = { ...prev };
+//         delete newTimers[bookingId];
+//         return newTimers;
+//       });
 //     }
-//   };
+    
+//     setSimulationStatus(prev => {
+//       const newStatus = { ...prev };
+//       delete newStatus[bookingId];
+//       return newStatus;
+//     });
+//   }, [simulationTimers]);
 
-//   // Helper function to render zone icon
-//   const renderZoneIcon = (zoneId) => {
-//     switch (zoneId) {
-//       case 1:
-//         return <Bike size={24} />;
-//       case 2:
-//         return <Truck size={24} />;
-//       case 3:
-//         return <Car size={24} />;
-//       default:
-//         return null;
+//   // Camera monitoring functions
+//   const stopCameraMonitoring = useCallback((bookingId) => {
+//     if (cleanupFlags.current[bookingId]) {
+//       return;
 //     }
-//   };
+    
+//     cleanupFlags.current[bookingId] = true;
+//     console.log(`Stopping camera monitoring for booking ${bookingId}`);
+    
+//     try {
+//       clearSimulationTimers(bookingId);
+      
+//       if (streamRefs.current[bookingId]) {
+//         const tracks = streamRefs.current[bookingId].getTracks();
+//         tracks.forEach(track => track.stop());
+//         delete streamRefs.current[bookingId];
+//       }
+      
+//       if (videoRefs.current[bookingId]) {
+//         videoRefs.current[bookingId].srcObject = null;
+//       }
+      
+//       if (plateDetectionInterval[bookingId]) {
+//         clearInterval(plateDetectionInterval[bookingId]);
+//         setPlateDetectionInterval(prev => {
+//           const newIntervals = { ...prev };
+//           delete newIntervals[bookingId];
+//           return newIntervals;
+//         });
+//       }
+      
+//       if (cameraTimers[bookingId]) {
+//         clearTimeout(cameraTimers[bookingId]);
+//         setCameraTimers(prev => {
+//           const newTimers = { ...prev };
+//           delete newTimers[bookingId];
+//           return newTimers;
+//         });
+//       }
+      
+//       setCameraStartTimes(prev => {
+//         const newTimes = { ...prev };
+//         delete newTimes[bookingId];
+//         return newTimes;
+//       });
+      
+//       setActiveCameras(prev => {
+//         const newCameras = { ...prev };
+//         delete newCameras[bookingId];
+//         return newCameras;
+//       });
+      
+//     } catch (error) {
+//       console.error(`Error during cleanup for booking ${bookingId}:`, error);
+//     } finally {
+//       setTimeout(() => {
+//         if (cleanupFlags.current[bookingId]) {
+//           delete cleanupFlags.current[bookingId];
+//         }
+//       }, 1000);
+//     }
+//   }, [clearSimulationTimers, plateDetectionInterval, cameraTimers]);
 
-//   return (
-//     <div className="users-list-container">
-//       <div className="users-list-header">
-//         <button className="back-button" onClick={onBack}>
-//           <ArrowLeft size={18} />
-//           Back to Dashboard
-//         </button>
-//         <h1>
-//           <Users size={24} style={{ marginRight: '8px' }} />
-//          Parking Lists
-//         </h1>
-//       </div>
+//   const startCameraMonitoring = useCallback(async (bookingId, mode) => {
+//     try {
+//       console.log(`Starting camera monitoring for booking ${bookingId} in ${mode} mode`);
+      
+//       const startTime = new Date();
+//       setCameraStartTimes(prev => ({
+//         ...prev,
+//         [bookingId]: startTime
+//       }));
+      
+//       setActiveCameras(prev => ({
+//         ...prev,
+//         [bookingId]: {
+//           active: true,
+//           mode: mode,
+//           startTime: startTime,
+//           monitoring: true,
+//           loading: true,
+//           error: null,
+//           persistent: true,
+//           hasSimulation: true
+//         }
+//       }));
+      
+//       setupSimulationTimers(bookingId);
+      
+//       // Set 5-minute timer
+//       const mainTimer = setTimeout(() => {
+//         console.log(`5-minute timer expired for booking ${bookingId}`);
+//         stopCameraMonitoring(bookingId);
+//         setStatusMessage(`Camera monitoring ended after 5 minutes for booking ${bookingId}`);
+//         setTimeout(() => setStatusMessage(''), 3000);
+//       }, 300000);
+      
+//       setCameraTimers(prev => ({
+//         ...prev,
+//         [bookingId]: mainTimer
+//       }));
+      
+//       // First ensure video element exists
+//       await new Promise(resolve => setTimeout(resolve, 100));
+      
+//       const videoElement = videoRefs.current[bookingId];
+//       if (!videoElement) {
+//         console.error(`Video element not found for booking ${bookingId}`);
+//         setActiveCameras(prev => ({
+//           ...prev,
+//           [bookingId]: {
+//             ...prev[bookingId],
+//             loading: false,
+//             error: 'Video element not ready. Please try again.',
+//             ready: false
+//           }
+//         }));
+//         return;
+//       }
+      
+//       console.log('Video element found, requesting camera access...');
+      
+//       // Request camera access with better constraints
+//       let stream;
+//       try {
+//         // Try different camera constraints for better compatibility
+//         const constraints = {
+//           video: {
+//             width: { ideal: 1280, min: 640 },
+//             height: { ideal: 720, min: 480 },
+//             frameRate: { ideal: 30, min: 15 },
+//             facingMode: { ideal: 'environment', exact: undefined }
+//           },
+//           audio: false
+//         };
+        
+//         stream = await navigator.mediaDevices.getUserMedia(constraints);
+//         console.log(`✅ Camera stream obtained for booking ${bookingId}`, stream);
+        
+//         // Log stream details
+//         const videoTrack = stream.getVideoTracks()[0];
+//         console.log('Video track settings:', videoTrack.getSettings());
+        
+//       } catch (cameraError) {
+//         console.error('❌ Camera access error:', cameraError);
+        
+//         // Try fallback with any available camera
+//         try {
+//           console.log('Trying fallback camera constraints...');
+//           stream = await navigator.mediaDevices.getUserMedia({
+//             video: true,
+//             audio: false
+//           });
+//           console.log('✅ Fallback camera stream obtained');
+//         } catch (fallbackError) {
+//           console.error('❌ Fallback camera also failed:', fallbackError);
+          
+//           setActiveCameras(prev => ({
+//             ...prev,
+//             [bookingId]: {
+//               ...prev[bookingId],
+//               loading: false,
+//               error: `Camera access denied. Please allow camera permissions in your browser and refresh the page.`,
+//               ready: false,
+//               persistent: true,
+//               hasSimulation: true,
+//               needsPermission: true
+//             }
+//           }));
+//           return;
+//         }
+//       }
+      
+//       // Store stream reference
+//       streamRefs.current[bookingId] = stream;
+//       console.log('Stream stored in refs');
+      
+//       // Set up video element immediately
+//       videoElement.srcObject = stream;
+//       videoElement.muted = true;
+//       videoElement.playsInline = true;
+//       videoElement.autoplay = true;
+      
+//       console.log('Video element configured with stream');
+      
+//       // Force video to play and handle the result
+//       try {
+//         // Wait for metadata to load
+//         await new Promise((resolve, reject) => {
+//           const timeout = setTimeout(() => {
+//             reject(new Error('Metadata loading timeout'));
+//           }, 5000);
+          
+//           const onLoadedMetadata = () => {
+//             console.log('✅ Video metadata loaded');
+//             clearTimeout(timeout);
+//             videoElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+//             videoElement.removeEventListener('error', onError);
+//             resolve();
+//           };
+          
+//           const onError = (error) => {
+//             console.error('❌ Video metadata error:', error);
+//             clearTimeout(timeout);
+//             videoElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+//             videoElement.removeEventListener('error', onError);
+//             reject(error);
+//           };
+          
+//           if (videoElement.readyState >= 1) {
+//             console.log('Video metadata already available');
+//             onLoadedMetadata();
+//           } else {
+//             videoElement.addEventListener('loadedmetadata', onLoadedMetadata);
+//             videoElement.addEventListener('error', onError);
+//           }
+//         });
+        
+//         // Now try to play the video
+//         console.log('Attempting to play video...');
+//         await videoElement.play();
+//         console.log('✅ Video is now playing!');
+        
+//         // Video is successfully playing
+//         setActiveCameras(prev => ({
+//           ...prev,
+//           [bookingId]: {
+//             ...prev[bookingId],
+//             loading: false,
+//             ready: true,
+//             error: null,
+//             videoReady: true,
+//             persistent: true,
+//             hasSimulation: true,
+//             streamActive: true,
+//             playing: true
+//           }
+//         }));
+        
+//         console.log(`🎥 Camera setup completed successfully for booking ${bookingId}`);
+        
+//       } catch (playError) {
+//         console.error('❌ Video play error:', playError);
+        
+//         // Video loaded but autoplay failed - show click to play
+//         setActiveCameras(prev => ({
+//           ...prev,
+//           [bookingId]: {
+//             ...prev[bookingId],
+//             loading: false,
+//             ready: false,
+//             error: null,
+//             videoReady: false,
+//             needsUserInteraction: true,
+//             persistent: true,
+//             hasSimulation: true,
+//             streamLoaded: true
+//           }
+//         }));
+        
+//         console.log('Video loaded but needs user interaction to play');
+//       }
+      
+//     } catch (error) {
+//       console.error('❌ Error in camera monitoring setup:', error);
+      
+//       setActiveCameras(prev => ({
+//         ...prev,
+//         [bookingId]: {
+//           active: true,
+//           mode: mode,
+//           startTime: cameraStartTimes[bookingId] || new Date(),
+//           loading: false,
+//           error: `Setup failed: ${error.message}. Try refreshing the page.`,
+//           ready: false,
+//           videoReady: false,
+//           persistent: true,
+//           hasSimulation: true
+//         }
+//       }));
+//     }
+//   }, [setupSimulationTimers, stopCameraMonitoring, cameraStartTimes]);
 
-//       {loading || loadingBookings ? (
-//         <div className="loading-container">
-//           <div className="loading-spinner"></div>
-//           <p>Loading data...</p>
-//         </div>
-//       ) : (
-//         <>
-//           {/* Zone Dashboard Section */}
-//           <div className="dashboard-card">
-//             <div className="card-header">
-//               <h2 className="card-title">Parking Zones</h2>
-//               <div className="connection-status">
-//                 <span>Active Vehicles: {connectionStatus}</span>
+//   const handleStartCheckin = useCallback(async (bookingId) => {
+//     console.log(`Starting check-in process for booking ${bookingId}`);
+    
+//     try {
+//       if (activeCameras[bookingId]?.active && activeCameras[bookingId]?.persistent) {
+//         setStatusMessage(`Camera is already monitoring for booking ${bookingId}`);
+//         setTimeout(() => setStatusMessage(''), 3000);
+//         return;
+//       }
+      
+//       if (activeCameras[bookingId]?.active) {
+//         stopCameraMonitoring(bookingId);
+//         await new Promise(resolve => setTimeout(resolve, 1000));
+//       }
+      
+//       await startCameraMonitoring(bookingId, 'checkin');
+      
+//       setStatusMessage(`🎬 Started 5-minute camera monitoring with simulation for booking ${bookingId}`);
+//       setTimeout(() => setStatusMessage(''), 5000);
+      
+//     } catch (error) {
+//       console.error(`Error starting check-in for booking ${bookingId}:`, error);
+//       setActivityError(`Failed to start camera monitoring: ${error.message}`);
+//     }
+//   }, [startCameraMonitoring, activeCameras, stopCameraMonitoring]);
+
+//   const handleStopCamera = useCallback((bookingId) => {
+//     console.log(`Manual stop requested for booking ${bookingId}`);
+//     stopCameraMonitoring(bookingId);
+//     setStatusMessage('Camera monitoring and simulation stopped manually.');
+//     setTimeout(() => setStatusMessage(''), 3000);
+//   }, [stopCameraMonitoring]);
+
+//   const handleVideoClick = useCallback(async (bookingId) => {
+//     const videoElement = videoRefs.current[bookingId];
+//     if (videoElement) {
+//       try {
+//         console.log('Manual video play attempt...');
+        
+//         if (videoElement.paused) {
+//           await videoElement.play();
+//           console.log('✅ Manual video play successful');
+          
+//           setActiveCameras(prev => ({
+//             ...prev,
+//             [bookingId]: {
+//               ...prev[bookingId],
+//               ready: true,
+//               error: null,
+//               videoReady: true,
+//               needsUserInteraction: false,
+//               persistent: true,
+//               hasSimulation: true,
+//               playing: true
+//             }
+//           }));
+//         }
+//       } catch (error) {
+//         console.error('❌ Manual video play failed:', error);
+//         setActiveCameras(prev => ({
+//           ...prev,
+//           [bookingId]: {
+//             ...prev[bookingId],
+//             error: 'Failed to start video. Please check camera permissions.'
+//           }
+//         }));
+//       }
+//     }
+//   }, []);
+
+//   // Check camera permissions
+//   const checkCameraPermissions = useCallback(async () => {
+//     try {
+//       const result = await navigator.permissions.query({ name: 'camera' });
+//       console.log('Camera permission state:', result.state);
+//       return result.state;
+//     } catch (error) {
+//       console.log('Permission query not supported');
+//       return 'unknown';
+//     }
+//   }, []);
+
+//   // Cleanup on unmount
+//   useEffect(() => {
+//     return () => {
+//       Object.keys(streamRefs.current).forEach(bookingId => {
+//         stopCameraMonitoring(bookingId);
+//       });
+//     };
+//   }, [stopCameraMonitoring]);
+
+//   // Update timer display every second
+//   useEffect(() => {
+//     const interval = setInterval(() => {
+//       setActiveCameras(prev => ({ ...prev }));
+//     }, 1000);
+    
+//     return () => clearInterval(interval);
+//   }, []);
+
+//   // Enhanced video element renderer with better live streaming
+//   const renderVideoElement = (bookingId) => {
+//     const camera = activeCameras[bookingId];
+//     const remainingTime = getRemainingTime(bookingId);
+//     const simulationProgress = getSimulationProgress(bookingId);
+    
+//     if (!camera || !camera.active) return null;
+    
+//     return (
+//       <div style={{ 
+//         width: '100%', 
+//         maxWidth: '600px', 
+//         borderRadius: '12px',
+//         marginBottom: '15px',
+//         backgroundColor: '#000',
+//         position: 'relative',
+//         aspectRatio: '16/9',
+//         overflow: 'hidden',
+//         border: '2px solid #10b981',
+//         boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+//       }}>
+//         {camera.loading ? (
+//           <div style={{
+//             width: '100%',
+//             height: '100%',
+//             display: 'flex',
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//             backgroundColor: '#1f2937',
+//             color: 'white',
+//             flexDirection: 'column',
+//             position: 'relative'
+//           }}>
+//             {/* Always create video element */}
+//             <video 
+//               ref={el => {
+//                 if (el) {
+//                   console.log(`📹 Creating video ref for booking ${bookingId} during loading`);
+//                   videoRefs.current[bookingId] = el;
+                  
+//                   // Set up video element properties immediately
+//                   el.playsInline = true;
+//                   el.muted = true;
+//                   el.controls = false;
+//                   el.style.width = '100%';
+//                   el.style.height = '100%';
+//                   el.style.objectFit = 'cover';
+//                   el.style.position = 'absolute';
+//                   el.style.top = '0';
+//                   el.style.left = '0';
+//                   el.style.zIndex = '1';
+//                 }
+//               }}
+//               playsInline
+//               muted
+//               autoPlay
+//               style={{
+//                 position: 'absolute',
+//                 top: 0,
+//                 left: 0,
+//                 width: '100%',
+//                 height: '100%',
+//                 objectFit: 'cover',
+//                 zIndex: 1
+//               }}
+//             />
+//             <div style={{ 
+//               position: 'relative', 
+//               zIndex: 10, 
+//               display: 'flex', 
+//               flexDirection: 'column', 
+//               alignItems: 'center',
+//               backgroundColor: 'rgba(31, 41, 55, 0.8)',
+//               padding: '20px',
+//               borderRadius: '8px'
+//             }}>
+//               <RefreshCw size={48} style={{ 
+//                 marginBottom: '15px',
+//                 animation: 'spin 1s linear infinite'
+//               }} />
+//               <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Starting Camera...</div>
+//               <div style={{ fontSize: '0.9rem', marginTop: '10px', color: '#10b981' }}>
+//                 Timer: {formatRemainingTime(remainingTime)} remaining
 //               </div>
-//             </div>
-//             <div className="zones-container">
-//               {zones.map(zone => (
-//                 <div 
-//                   key={zone.id}
-//                   className={`zone-card ${zone.occupied ? 'zone-occupied' : 'zone-available'}`}
-//                   onClick={() => handleZoneClick(zone.id)}
-//                 >
-//                   <div className="zone-icon">
-//                     {renderZoneIcon(zone.id)}
-//                   </div>
-//                   <div className="zone-info">
-//                     <h3>Slot {zone.id}</h3>
-//                     <p>{zone.name} ({zone.type})</p>
-//                     <div className="zone-status">
-//                       <span className="zone-vehicles">
-//                         {zone.occupied ? '1 Vehicle' : '0 Vehicles'}
-//                       </span>
-//                       <span className={`zone-indicator ${zone.occupied ? 'status-occupied' : 'status-available'}`}>
-//                         {zone.occupied ? 'Occupied' : 'Available'}
-//                       </span>
-//                     </div>
-//                   </div>
-//                 </div>
-//               ))}
-//             </div>
-//           </div>
-
-//           <div className="users-table-container">
-//             {users.length > 0 ? (
-//               <table className="users-table">
-//                 <thead>
-//                   <tr>
-//                     <th>Name</th>
-//                     <th>Email</th>
-//                     <th>Role</th>
-//                     <th>Joined</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {users.map((user) => (
-//                     <tr key={user.id}>
-//                       <td>
-//                         <div className="user-avatar">
-//                           {user.name ? user.name.charAt(0) : 'U'}
-//                         </div>
-//                         {user.name || 'Unknown User'}
-//                       </td>
-//                       <td>{user.email || 'N/A'}</td>
-//                       <td>
-//                         <span className={`role-badge ${user.role}`}>
-//                           {user.role || 'N/A'}
-//                         </span>
-//                       </td>
-//                       <td>
-//                         {user.createdAt
-//                           ? new Date(user.createdAt.seconds * 1000).toLocaleDateString('en-US', {
-//                               year: 'numeric',
-//                               month: 'short',
-//                               day: 'numeric'
-//                             })
-//                           : 'N/A'}
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             ) : users.length === 0 && correctedActivity.length === 0 ? (
-//               <div className="no-users">
-//                 <p>No users found.</p>
-//               </div>
-//             ) : null}
-//           </div>
-
-//           {error && <div className="error-message">{error}</div>}
-
-//           <div className="dashboard-card" style={{ marginTop: '20px' }}>
-//             <div className="card-header">
-//               <h2 className="card-title">Recent Activity</h2>
-//               <div className="view-all">View All</div>
-//             </div>
-            
-//             <div className="activity-list">
-//               {correctedActivity.length > 0 ? (
-//                 correctedActivity.map((activity) => (
-//                   <div key={activity.id}>
-//                     <div
-//                       className="activity-item activity-card"
-//                       onClick={() => handleActivityClick(activity)}
-//                     >
-//                       <div className="activity-avatar">
-//                         {activity.user.charAt(0)}
-//                       </div>
-//                       <div className="activity-details">
-//                         <p className="activity-text">
-//                           <span className="activity-user">{activity.user}</span> {activity.action}
-//                         </p>
-//                         <p className="activity-time">{activity.time}</p>
-//                       </div>
-//                       <ChevronRight
-//                         size={20}
-//                         className={`expand-icon ${expandedActivity === activity.id ? 'rotated' : ''}`}
-//                       />
-//                     </div>
-
-//                     {expandedActivity === activity.id && (
-//                       <div className="activity-details-expanded">
-//                         <h3>{activity.user}'s Parking History</h3>
-//                         {activityError && (
-//                           <div className="error-message">{activityError}</div>
-//                         )}
-
-//                         {userBookings.length === 0 ? (
-//                           <div className="no-bookings">
-//                             <Activity size={48} />
-//                             <h4>No bookings found</h4>
-//                             <p>No booking history available for this user.</p>
-//                           </div>
-//                         ) : (
-//                           <div className="bookings-list">
-//                             {userBookings.map((booking) => {
-//                               const displayStatus = determineBookingStatus(booking);
-//                               const bookingState = bookingStates[booking.id] || {};
-//                               const verificationResult = verificationResults[booking.id];
-//                               const isProcessingPayment = paymentProcessing[booking.id];
-                              
-//                               // Check if user has checked in
-//                               const hasCheckedIn = booking.checkedIn || 
-//                                 booking.checkinVehicleNumber || 
-//                                 (bookingState && bookingState.zoneSelected);
-                              
-//                               // Check if user has checked out
-//                               const hasCheckedOut = booking.checkedOut || 
-//                                 booking.checkoutVehicleNumber || 
-//                                 (verificationResult && verificationResult.checkoutVehicleNumber);
-
-//                               return (
-//                                 <div key={booking.id} className="booking-card">
-//                                   <div className="booking-card-header">
-//                                     <div className="booking-basic-info">
-//                                       <h4>{booking.parkingLotName || 'Parking Lot'}</h4>
-//                                       <div className="booking-meta">
-//                                         <span className="booking-id">ID: {booking.bookingId || booking.id || 'N/A'}</span>
-//                                         <span className={`booking-status ${getStatusClass(displayStatus)}`}>
-//                                           {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
-//                                         </span>
-//                                       </div>
-//                                     </div>
-//                                   </div>
-
-//                                   <div className="booking-details">
-//                                     <div className="detail-section">
-//                                       <h5>Location</h5>
-//                                       <div className="detail-item">
-//                                         <MapPin size={16} />
-//                                         <span>{booking.location || booking.parkingLotLocation || 'Location not available'}</span>
-//                                       </div>
-//                                     </div>
-
-//                                     <div className="detail-section">
-//                                       <h5>Timing Details</h5>
-//                                       <div className="detail-item">
-//                                         <Clock size={16} />
-//                                         <div className="time-details">
-//                                           <div className="time-range">
-//                                             <span>Start: {formatDateTime(booking.startTime)}</span>
-//                                             <span>End: {formatDateTime(booking.endTime)}</span>
-//                                           </div>
-//                                           <div className="duration">
-//                                             Duration: {getTimeDifference(booking.startTime, booking.endTime)}
-//                                           </div>
-//                                         </div>
-//                                       </div>
-//                                     </div>
-
-//                                     <div className="detail-section payment-details">
-//                                       <div className="payment-info">
-//                                         <h5>Payment Details</h5>
-//                                         <div className="payment-amount">₹{booking.amount || booking.paymentAmount || '80'}</div>
-//                                       </div>
-//                                       <div className="payment-method">
-//                                         {booking.paymentMethod ? 
-//                                           `${booking.paymentMethod.charAt(0).toUpperCase() + booking.paymentMethod.slice(1)} Payment` : 
-//                                           (booking.status === 'completed' ? 'Payment Completed' : 'Payment Pending')
-//                                         }
-//                                         {booking.paymentId && (
-//                                           <div className="payment-id">
-//                                             Transaction ID: {booking.paymentId.substring(0, 10)}...
-//                                           </div>
-//                                         )}
-//                                       </div>
-//                                     </div>
-
-//                                     <div className="detail-section">
-//                                       <h5>Parking Space</h5>
-//                                       <div className="space-info">
-//                                         <div className="space-number">Space #{booking.spaceId || 'N/A'}</div>
-                                        
-//                                         {/* Vehicle Type Display */}
-//                                         {(booking.vehicleType || (bookingState && bookingState.vehicleType)) && (
-//                                           <div className="vehicle-type">
-//                                             {getVehicleTypeIcon(booking.vehicleType || bookingState.vehicleType)}
-//                                             <span>Type: {getVehicleTypeLabel(booking.vehicleType || bookingState.vehicleType)}</span>
-//                                           </div>
-//                                         )}
-                                        
-//                                         {/* Check-in Vehicle Number Display */}
-//                                         {(booking.checkinVehicleNumber || (bookingState && bookingState.checkinVehicleNumber)) && (
-//                                           <div className="vehicle-info">
-//                                             Check-in Vehicle: {booking.checkinVehicleNumber || bookingState.checkinVehicleNumber}
-//                                           </div>
-//                                         )}
-                                        
-//                                         {/* Checkout Vehicle Number Display */}
-//                                         {(booking.checkoutVehicleNumber || 
-//                                           (bookingState && bookingState.checkoutVehicleNumber) ||
-//                                           (verificationResult && verificationResult.checkoutVehicleNumber)) && (
-//                                           <div className="vehicle-info">
-//                                             Checkout Vehicle: {booking.checkoutVehicleNumber || 
-//                                               bookingState.checkoutVehicleNumber || 
-//                                               (verificationResult && verificationResult.checkoutVehicleNumber)}
-//                                           </div>
-//                                         )}
-//                                       </div>
-//                                     </div>
-
-//                                     {/* Check-in Image Display */}
-//                                     {(booking.checkinImageData || (bookingState && bookingState.checkinImageData)) && (
-//                                       <div className="image-preview-section">
-//                                         <h5>Check-in Image</h5>
-//                                         <div className="image-preview">
-//                                           <img 
-//                                             src={booking.checkinImageData || bookingState.checkinImageData} 
-//                                             alt="Check-in Vehicle" 
-//                                             className="captured-image"
-//                                           />
-//                                         </div>
-//                                       </div>
-//                                     )}
-
-//                                     {/* Checkout Image Display */}
-//                                     {(booking.checkoutImageData || 
-//                                       (bookingState && bookingState.checkoutImageData) ||
-//                                       (verificationResult && verificationResult.checkoutImageData)) && (
-//                                       <div className="image-preview-section">
-//                                         <h5>Checkout Image</h5>
-//                                         <div className="image-preview">
-//                                           <img 
-//                                             src={booking.checkoutImageData || 
-//                                               bookingState.checkoutImageData || 
-//                                               (verificationResult && verificationResult.checkoutImageData)} 
-//                                             alt="Checkout Vehicle" 
-//                                             className="captured-image"
-//                                           />
-//                                         </div>
-//                                       </div>
-//                                     )}
-
-//                                     {/* Verification Result Display */}
-//                                     {verificationResult && (
-//                                       <div className={`verification-result ${verificationResult.isMatch ? 'verification-success' : 'verification-error'}`}>
-//                                         {verificationResult.isMatch ? (
-//                                           <div className="verification-success-content">
-//                                             <CheckCircle size={24} />
-//                                             <span>{verificationResult.message}</span>
-//                                           </div>
-//                                         ) : (
-//                                           <div className="verification-error-content">
-//                                             <AlertTriangle size={24} />
-//                                             <span>{verificationResult.message}</span>
-//                                           </div>
-//                                         )}
-//                                       </div>
-//                                     )}
-
-//                                     {/* Zone Selection UI */}
-//                                     {bookingState.webcamMode === 'zonepicker' && (
-//                                       <div className="zone-selection">
-//                                         <h5>Select Vehicle Zone</h5>
-//                                         <div className="vehicle-image-container">
-//                                           <img 
-//                                             src={bookingState.checkinImageData} 
-//                                             alt="Vehicle" 
-//                                             className="vehicle-image"
-//                                           />
-//                                         </div>
-//                                         <div className="zone-buttons">
-//                                           <button 
-//                                             className="zone-button zone-a"
-//                                             onClick={() => selectZone(booking.id, 'A')}
-//                                           >
-//                                             <Bike size={20} />
-//                                             <span>Zone A (Car)</span>
-//                                           </button>
-//                                           <button 
-//                                             className="zone-button zone-b"
-//                                             onClick={() => selectZone(booking.id, 'B')}
-//                                           >
-//                                             <Truck size={20} />
-//                                             <span>Zone B (Car)</span>
-//                                           </button>
-//                                           <button 
-//                                             className="zone-button zone-c"
-//                                             onClick={() => selectZone(booking.id, 'C')}
-//                                           >
-//                                             <Car size={20} />
-//                                             <span>Zone C (Car)</span>
-//                                           </button>
-//                                         </div>
-//                                       </div>
-//                                     )}
-
-//                                     {/* Success Message */}
-//                                     {bookingState.successMessage && !verificationResult && (
-//                                       <div className="success-message-card">
-//                                         {bookingState.successMessage}
-//                                       </div>
-//                                     )}
-
-//                                     {/* Check-in Button - Only show for active bookings without check-in */}
-//                                     {displayStatus === 'active' && 
-//                                      !hasCheckedIn && 
-//                                      !bookingState.webcamActive && 
-//                                      !isProcessingPayment && (
-//                                       <button
-//                                         className="checkin-btn"
-//                                         onClick={() => startWebcamForCheckin(booking.id)}
-//                                       >
-//                                         <Camera size={16} />
-//                                         Check-in
-//                                       </button>
-//                                     )}
-
-//                                     {/* Checkout Button - Only show for active bookings with check-in but no checkout */}
-//                                     {displayStatus === 'active' && 
-//                                      hasCheckedIn && 
-//                                      !hasCheckedOut && 
-//                                      !bookingState.webcamActive && 
-//                                      !isProcessingPayment && (
-//                                       <button
-//                                         className="checkout-btn"
-//                                         onClick={() => startWebcamForCheckout(booking.id)}
-//                                       >
-//                                         <Camera size={16} />
-//                                         Checkout
-//                                       </button>
-//                                     )}
-
-//                                     {/* Webcam Section */}
-//                                     {bookingState.webcamActive && bookingState.webcamMode !== 'zonepicker' && (
-//                                       <div className="webcam-container">
-//                                         <h5>
-//                                           {bookingState.webcamMode === 'checkin' 
-//                                             ? 'Capturing Check-in Vehicle Number Plate' 
-//                                             : 'Capturing Checkout Vehicle Number Plate'}
-//                                         </h5>
-//                                         {bookingState.webcamError && (
-//                                           <div className="error-message">{bookingState.webcamError}</div>
-//                                         )}
-//                                         <video
-//                                           ref={el => (videoRefs.current[booking.id] = el)}
-//                                           autoPlay
-//                                           playsInline
-//                                           className="webcam-video"
-//                                         />
-//                                         <canvas
-//                                           ref={el => (canvasRefs.current[booking.id] = el)}
-//                                           style={{ display: 'none' }}
-//                                         />
-//                                         <button
-//                                           className="capture-btn"
-//                                           onClick={() => 
-//                                             bookingState.webcamMode === 'checkin' 
-//                                               ? captureCheckinImage(booking.id) 
-//                                               : captureCheckoutImage(booking.id)
-//                                           }
-//                                         >
-//                                           Capture
-//                                         </button>
-//                                       </div>
-//                                     )}
-
-                                   
-//                                   </div>
-//                                 </div>
-//                               );
-//                             })}
-//                           </div>
-//                         )}
-//                       </div>
-//                     )}
-//                   </div>
-//                 ))
-//               ) : (
-//                 <div className="no-activity">
-//                   <p>No recent activity to display</p>
+//               {camera.hasSimulation && simulationProgress && (
+//                 <div style={{ fontSize: '0.9rem', marginTop: '10px', color: '#f59e0b', fontWeight: 'bold' }}>
+//                   🎬 {simulationProgress.message}
 //                 </div>
 //               )}
 //             </div>
 //           </div>
-//         </>
+//         ) : camera.error || camera.needsPermission ? (
+//           <div style={{
+//             width: '100%',
+//             height: '100%',
+//             display: 'flex',
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//             backgroundColor: '#1f2937',
+//             color: 'white',
+//             flexDirection: 'column',
+//             padding: '30px',
+//             textAlign: 'center',
+//             position: 'relative'
+//           }}>
+//             {/* Video element still available for retry */}
+//             <video 
+//               ref={el => {
+//                 if (el) {
+//                   console.log(`📹 Creating video ref for booking ${bookingId} during error`);
+//                   videoRefs.current[bookingId] = el;
+//                   el.playsInline = true;
+//                   el.muted = true;
+//                   el.controls = false;
+//                 }
+//               }}
+//               playsInline
+//               muted
+//               autoPlay
+//               style={{
+//                 position: 'absolute',
+//                 top: 0,
+//                 left: 0,
+//                 width: '100%',
+//                 height: '100%',
+//                 objectFit: 'cover',
+//                 zIndex: 1
+//               }}
+//             />
+            
+//             <div style={{ 
+//               position: 'relative', 
+//               zIndex: 10,
+//               backgroundColor: 'rgba(31, 41, 55, 0.9)',
+//               padding: '20px',
+//               borderRadius: '8px'
+//             }}>
+//               <AlertCircle size={48} style={{ 
+//                 marginBottom: '15px',
+//                 color: '#f59e0b'
+//               }} />
+//               <div style={{ fontSize: '1.1rem', marginBottom: '15px', fontWeight: 'bold' }}>
+//                 {camera.needsPermission ? 'Camera Permission Required' : 'Camera Error'}
+//               </div>
+//               <div style={{ fontSize: '0.9rem', color: '#d1d5db', marginBottom: '15px' }}>
+//                 {camera.needsPermission ? 
+//                   'Please allow camera access in your browser and click "Enable Camera" below.' :
+//                   camera.error
+//                 }
+//               </div>
+//               <div style={{ fontSize: '0.9rem', marginBottom: '15px', color: '#10b981', fontWeight: 'bold' }}>
+//                 Timer: {formatRemainingTime(remainingTime)} remaining
+//               </div>
+//               {camera.hasSimulation && simulationProgress && (
+//                 <div style={{ fontSize: '0.9rem', marginBottom: '15px', color: '#f59e0b', fontWeight: 'bold' }}>
+//                   🎬 {simulationProgress.message}
+//                 </div>
+//               )}
+              
+//               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+//                 <button
+//                   onClick={() => handleStartCheckin(bookingId)}
+//                   style={{
+//                     padding: '12px 24px',
+//                     background: '#4f46e5',
+//                     color: 'white',
+//                     border: 'none',
+//                     borderRadius: '8px',
+//                     cursor: 'pointer',
+//                     fontSize: '1rem',
+//                     fontWeight: 'bold',
+//                     display: 'flex',
+//                     alignItems: 'center',
+//                     gap: '8px'
+//                   }}
+//                 >
+//                   <Camera size={20} />
+//                   {camera.needsPermission ? 'Enable Camera' : 'Retry Camera'}
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         ) : camera.needsUserInteraction || camera.streamLoaded ? (
+//           <div style={{
+//             width: '100%',
+//             height: '100%',
+//             position: 'relative'
+//           }}>
+//             {/* Video element - should show stream */}
+//             <video 
+//               ref={el => {
+//                 if (el) {
+//                   console.log(`📹 Creating video ref for booking ${bookingId} - needs interaction`);
+//                   videoRefs.current[bookingId] = el;
+//                   el.playsInline = true;
+//                   el.muted = true;
+//                   el.controls = false;
+//                 }
+//               }}
+//               playsInline
+//               muted
+//               onClick={() => handleVideoClick(bookingId)}
+//               style={{
+//                 width: '100%',
+//                 height: '100%',
+//                 objectFit: 'cover',
+//                 backgroundColor: '#000',
+//                 cursor: 'pointer'
+//               }}
+//             />
+            
+//             {/* Play button overlay */}
+//             <div style={{
+//               position: 'absolute',
+//               top: '50%',
+//               left: '50%',
+//               transform: 'translate(-50%, -50%)',
+//               zIndex: 10,
+//               backgroundColor: 'rgba(0, 0, 0, 0.8)',
+//               padding: '20px',
+//               borderRadius: '50%',
+//               cursor: 'pointer'
+//             }}
+//             onClick={() => handleVideoClick(bookingId)}
+//             >
+//               <Play size={40} color="white" />
+//             </div>
+            
+//             {/* Timer overlay */}
+//             <div style={{
+//               position: 'absolute',
+//               top: '15px',
+//               left: '15px',
+//               background: 'rgba(239, 68, 68, 0.95)',
+//               color: 'white',
+//               padding: '8px 16px',
+//               borderRadius: '8px',
+//               fontSize: '0.9rem',
+//               fontWeight: 'bold',
+//               zIndex: 5
+//             }}>
+//               READY • {formatRemainingTime(remainingTime)}
+//             </div>
+            
+//             {/* Simulation overlay */}
+//             {camera.hasSimulation && simulationProgress && (
+//               <div style={{
+//                 position: 'absolute',
+//                 top: '70px',
+//                 left: '15px',
+//                 right: '15px',
+//                 background: 'rgba(245, 158, 11, 0.95)',
+//                 color: 'white',
+//                 padding: '12px 16px',
+//                 borderRadius: '8px',
+//                 fontSize: '1rem',
+//                 textAlign: 'center',
+//                 fontWeight: 'bold',
+//                 zIndex: 5
+//               }}>
+//                 🎬 SIMULATION: {simulationProgress.message}
+//               </div>
+//             )}
+//           </div>
+//         ) : (
+//           <div style={{
+//             width: '100%',
+//             height: '100%',
+//             position: 'relative'
+//           }}>
+//             {/* MAIN VIDEO ELEMENT - LIVE FEED */}
+//             <video 
+//               ref={el => {
+//                 if (el) {
+//                   console.log(`📹 Creating LIVE video ref for booking ${bookingId}`);
+//                   videoRefs.current[bookingId] = el;
+                  
+//                   // Ensure video properties are set correctly
+//                   el.playsInline = true;
+//                   el.muted = true;
+//                   el.controls = false;
+//                   el.autoplay = true;
+                  
+//                   // Debug video element
+//                   el.addEventListener('loadstart', () => console.log('📹 Video loadstart'));
+//                   el.addEventListener('loadedmetadata', () => console.log('📹 Video metadata loaded'));
+//                   el.addEventListener('canplay', () => console.log('📹 Video can play'));
+//                   el.addEventListener('playing', () => console.log('📹 Video is playing'));
+//                   el.addEventListener('error', (e) => console.error('📹 Video error:', e));
+//                 }
+//               }}
+//               playsInline
+//               muted
+//               autoPlay
+//               onClick={() => handleVideoClick(bookingId)}
+//               style={{
+//                 width: '100%',
+//                 height: '100%',
+//                 objectFit: 'cover',
+//                 backgroundColor: '#000',
+//                 display: 'block',
+//                 position: 'absolute',
+//                 top: 0,
+//                 left: 0,
+//                 zIndex: 1
+//               }}
+//             />
+            
+//             {/* LIVE indicator with timer */}
+//             {camera.videoReady && (
+//               <div style={{
+//                 position: 'absolute',
+//                 top: '15px',
+//                 left: '15px',
+//                 background: 'rgba(239, 68, 68, 0.95)',
+//                 color: 'white',
+//                 padding: '8px 16px',
+//                 borderRadius: '8px',
+//                 fontSize: '0.9rem',
+//                 fontWeight: 'bold',
+//                 display: 'flex',
+//                 alignItems: 'center',
+//                 boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+//                 zIndex: 10
+//               }}>
+//                 <div style={{
+//                   width: '10px',
+//                   height: '10px',
+//                   borderRadius: '50%',
+//                   background: 'white',
+//                   marginRight: '8px',
+//                   animation: 'pulse 1s infinite'
+//                 }} />
+//                 LIVE • {formatRemainingTime(remainingTime)}
+//               </div>
+//             )}
+            
+//             {/* Simulation status overlay */}
+//             {camera.hasSimulation && simulationProgress && camera.videoReady && (
+//               <div style={{
+//                 position: 'absolute',
+//                 top: '70px',
+//                 left: '15px',
+//                 right: '15px',
+//                 background: 'rgba(245, 158, 11, 0.95)',
+//                 color: 'white',
+//                 padding: '12px 16px',
+//                 borderRadius: '8px',
+//                 fontSize: '1rem',
+//                 textAlign: 'center',
+//                 fontWeight: 'bold',
+//                 boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+//                 zIndex: 10
+//               }}>
+//                 🎬 SIMULATION: {simulationProgress.message}
+//               </div>
+//             )}
+            
+//             {/* Detection status overlay */}
+//             {camera.videoReady && (
+//               <div style={{
+//                 position: 'absolute',
+//                 bottom: '15px',
+//                 left: '15px',
+//                 right: '15px',
+//                 background: 'rgba(0, 0, 0, 0.85)',
+//                 color: 'white',
+//                 padding: '12px 16px',
+//                 borderRadius: '8px',
+//                 fontSize: '0.95rem',
+//                 textAlign: 'center',
+//                 fontWeight: '500',
+//                 boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+//                 zIndex: 10
+//               }}>
+//                 {camera.simulatingCheckin ? 
+//                   '🎬 SIMULATING CHECK-IN...' :
+//                   camera.simulatingCheckout ?
+//                   '🎬 SIMULATING CHECKOUT...' :
+//                   camera.mode === 'checkin' ? 
+//                     '🔍 Scanning for authorized vehicle plates...' :
+//                     `🚗 Waiting for vehicle: ${detectedPlates[bookingId]?.plateNumber || 'Unknown'}`
+//                 }
+//               </div>
+//             )}
+            
+//             {/* Controls overlay */}
+//             <div style={{
+//               position: 'absolute',
+//               top: '15px',
+//               right: '15px',
+//               display: 'flex',
+//               gap: '8px',
+//               zIndex: 10
+//             }}>
+//               <button
+//                 onClick={(e) => {
+//                   e.stopPropagation();
+//                   handleStopCamera(bookingId);
+//                 }}
+//                 style={{
+//                   background: 'rgba(220, 38, 38, 0.9)',
+//                   color: 'white',
+//                   border: 'none',
+//                   borderRadius: '6px',
+//                   padding: '8px 12px',
+//                   cursor: 'pointer',
+//                   display: 'flex',
+//                   alignItems: 'center',
+//                   fontSize: '0.8rem',
+//                   fontWeight: 'bold'
+//                 }}
+//               >
+//                 <StopCircle size={16} style={{ marginRight: '4px' }} />
+//                 Stop
+//               </button>
+//             </div>
+//           </div>
+//         )}
+        
+//         {/* Hidden canvas for image capture */}
+//         <canvas 
+//           ref={el => {
+//             if (el) {
+//               canvasRefs.current[bookingId] = el;
+//             }
+//           }}
+//           style={{ display: 'none' }} 
+//         />
+//       </div>
+//     );
+//   };
+
+//   return (
+//     <div style={{ fontFamily: 'Inter, system-ui, sans-serif', padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
+//       {/* Header */}
+//       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '30px' }}>
+//         <button 
+//           onClick={onBack}
+//           style={{ 
+//             display: 'flex', 
+//             alignItems: 'center', 
+//             background: 'none', 
+//             border: 'none', 
+//             cursor: 'pointer',
+//             color: '#4f46e5',
+//             marginRight: '20px',
+//             fontSize: '1rem'
+//           }}
+//         >
+//           <ArrowLeft size={20} />
+//           <span style={{ marginLeft: '8px' }}>Back to Dashboard</span>
+//         </button>
+//         <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: '2rem' }}>
+//           <Users size={28} style={{ marginRight: '12px' }} />
+//           Live Camera Monitoring System
+//         </h1>
+//       </div>
+
+//       {/* Enhanced Simulation Info */}
+//       <div style={{ 
+//         background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', 
+//         borderRadius: '16px', 
+//         padding: '30px', 
+//         boxShadow: '0 8px 32px rgba(0,0,0,0.1)', 
+//         marginBottom: '30px',
+//         border: '2px solid #0ea5e9'
+//       }}>
+//         <h2 style={{ margin: '0 0 20px 0', fontSize: '1.8rem', color: '#0c4a6e' }}>🎬 Live Camera Simulation System</h2>
+//         <p style={{ margin: '0 0 20px 0', color: '#0c4a6e', fontSize: '1.1rem' }}>
+//           Real-time camera streaming
+//         </p>
+//         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '20px' }}>
+          
+//           <div style={{
+//             background: '#dcfce7',
+//             color: '#047857',
+//             padding: '12px 20px',
+//             borderRadius: '12px',
+//             fontWeight: 'bold',
+//             fontSize: '1rem',
+//             boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+//           }}>
+//             ✅ Live Video Feed + Completion
+//           </div>
+//         </div>
+//         <div style={{ 
+//           background: 'rgba(255,255,255,0.8)', 
+//           padding: '15px', 
+//           borderRadius: '12px',
+//           fontSize: '1rem',
+//           color: '#0c4a6e'
+//         }}>
+//           📹 <strong>Live Camera Features:</strong> Real-time video streaming, automatic plate detection simulation, 5-minute persistent monitoring, interactive controls
+//         </div>
+//       </div>
+
+//       {/* Status Messages */}
+//       {statusMessage && (
+//         <div style={{ 
+//           margin: '0 0 20px 0', 
+//           padding: '15px 20px', 
+//           backgroundColor: statusMessage.includes('❌') ? '#fee2e2' : '#ecfdf5', 
+//           borderRadius: '12px', 
+//           borderLeft: statusMessage.includes('❌') ? '4px solid #dc2626' : '4px solid #10b981',
+//           display: 'flex',
+//           alignItems: 'center',
+//           fontSize: '1rem'
+//         }}>
+//           {statusMessage.includes('❌') ? 
+//             <XCircle size={20} style={{ marginRight: '12px', color: '#dc2626' }} /> :
+//             <CheckCircle size={20} style={{ marginRight: '12px', color: '#10b981' }} />
+//           }
+//           <span style={{ 
+//             color: statusMessage.includes('❌') ? '#b91c1c' : '#065f46', 
+//             fontWeight: 600 
+//           }}>
+//             {statusMessage}
+//           </span>
+//         </div>
 //       )}
+
+//       {/* Main Content */}
+//       <div style={{ 
+//         background: 'white', 
+//         borderRadius: '16px', 
+//         padding: '30px', 
+//         boxShadow: '0 8px 32px rgba(0,0,0,0.1)', 
+//         marginBottom: '30px' 
+//       }}>
+//         <h2 style={{ margin: '0 0 25px 0', fontSize: '1.8rem' }}>Parking Activity Monitor</h2>
+        
+//         <div>
+//           {recentActivity.length > 0 ? (
+//             recentActivity.map((activity) => (
+//               <div key={activity.id} style={{ marginBottom: '20px' }}>
+//                 <div style={{ 
+//                   display: 'flex', 
+//                   alignItems: 'center',
+//                   padding: '20px',
+//                   borderRadius: '12px',
+//                   border: '2px solid #e5e7eb',
+//                   cursor: 'pointer',
+//                   transition: 'all 0.3s',
+//                   background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)'
+//                 }}
+//                 onClick={() => setExpandedActivity(expandedActivity === activity.id ? null : activity.id)}
+//                 >
+//                   <div style={{ 
+//                     width: '50px', 
+//                     height: '50px', 
+//                     borderRadius: '50%', 
+//                     background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', 
+//                     color: 'white',
+//                     display: 'flex',
+//                     alignItems: 'center',
+//                     justifyContent: 'center',
+//                     marginRight: '20px',
+//                     fontSize: '1.5rem',
+//                     fontWeight: 'bold'
+//                   }}>
+//                     {activity.user ? activity.user.charAt(0).toUpperCase() : 'U'}
+//                   </div>
+//                   <div style={{ flex: 1 }}>
+//                     <p style={{ margin: '0 0 8px 0', fontSize: '1.1rem' }}>
+//                       <span style={{ fontWeight: 'bold' }}>{activity.user}</span> {activity.action}
+//                     </p>
+//                     <p style={{ margin: 0, fontSize: '0.9rem', color: '#6b7280' }}>{activity.time}</p>
+//                   </div>
+//                   <ChevronRight 
+//                     size={20} 
+//                     style={{ 
+//                       transform: expandedActivity === activity.id ? 'rotate(90deg)' : 'rotate(0deg)',
+//                       transition: 'transform 0.3s'
+//                     }} 
+//                   />
+//                 </div>
+
+//                 {/* Show expanded view for selected activity */}
+//                 {expandedActivity === activity.id && (
+//                   <div style={{ 
+//                     padding: '30px', 
+//                     border: '2px solid #e5e7eb',
+//                     borderTop: 'none',
+//                     borderBottomLeftRadius: '12px',
+//                     borderBottomRightRadius: '12px',
+//                     background: '#f9fafb'
+//                   }}>
+//                     <h3 style={{ marginTop: 0, fontSize: '1.5rem' }}>{activity.user}'s Live Monitoring</h3>
+                    
+//                     <div>
+//                       {userBookings.map((booking) => {
+//                         const displayStatus = determineBookingStatus(booking);
+//                         const cameraActive = activeCameras[booking.id]?.active;
+//                         const detectedPlate = detectedPlates[booking.id];
+//                         const remainingTime = getRemainingTime(booking.id);
+//                         const isCompleted = displayStatus === 'completed' && detectedPlate?.isSimulated;
+
+//                         return (
+//                           <div key={booking.id} style={{ 
+//                             background: 'white', 
+//                             borderRadius: '16px', 
+//                             boxShadow: '0 8px 32px rgba(0,0,0,0.1)', 
+//                             marginBottom: '20px',
+//                             overflow: 'hidden',
+//                             border: '2px solid #e5e7eb'
+//                           }}>
+//                             <div style={{ 
+//                               padding: '25px', 
+//                               borderBottom: '2px solid #e5e7eb'
+//                             }}>
+//                               <div>
+//                                 <h4 style={{ margin: '0 0 10px 0', fontSize: '1.3rem' }}>{booking.parkingLotName || 'Parking Lot'}</h4>
+//                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+//                                   <span style={{ fontSize: '1rem', color: '#6b7280' }}>ID: {booking.bookingId || booking.id || 'N/A'}</span>
+//                                   <span style={{ 
+//                                     padding: '6px 16px', 
+//                                     borderRadius: '999px',
+//                                     fontSize: '0.9rem',
+//                                     fontWeight: 'bold',
+//                                     background: 
+//                                       displayStatus === 'active' ? '#dbeafe' : 
+//                                       displayStatus === 'completed' ? '#d1fae5' : '#f3f4f6',
+//                                     color: 
+//                                       displayStatus === 'active' ? '#1e40af' : 
+//                                       displayStatus === 'completed' ? '#047857' : '#374151'
+//                                   }}>
+//                                     {displayStatus === 'completed' && detectedPlate?.isSimulated ? 
+//                                       '🎬 Simulation Completed' : 
+//                                       displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)
+//                                     }
+//                                   </span>
+//                                 </div>
+//                               </div>
+//                             </div>
+
+//                             <div style={{ padding: '25px' }}>
+//                               {/* Simulation Status Display */}
+//                               {detectedPlate?.isSimulated && (
+//                                 <div style={{ marginBottom: '25px' }}>
+//                                   <h5 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#6b7280' }}>🎬 Simulation Results</h5>
+//                                   <div style={{ 
+//                                     background: displayStatus === 'completed' ? '#dcfce7' : '#fef3c7',
+//                                     padding: '20px',
+//                                     borderRadius: '12px',
+//                                     border: displayStatus === 'completed' ? '2px solid #10b981' : '2px solid #f59e0b'
+//                                   }}>
+//                                     {detectedPlate?.checkinTime && (
+//                                       <div style={{ fontSize: '1rem', marginBottom: '10px', color: displayStatus === 'completed' ? '#047857' : '#92400e' }}>
+//                                         ✅ <strong>Check-in:</strong> {detectedPlate.checkinTime.toLocaleTimeString()} - KA19EQ1316
+//                                       </div>
+//                                     )}
+//                                     {detectedPlate?.checkoutTime && (
+//                                       <div style={{ fontSize: '1rem', marginBottom: '10px', color: '#047857' }}>
+//                                         ✅ <strong>Checkout:</strong> {detectedPlate.checkoutTime.toLocaleTimeString()} - KA19EQ1316
+//                                       </div>
+//                                     )}
+//                                     {displayStatus === 'completed' && (
+//                                       <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#047857' }}>
+//                                         🎉 <strong>LIVE SIMULATION COMPLETED SUCCESSFULLY!</strong>
+//                                       </div>
+//                                     )}
+//                                   </div>
+//                                 </div>
+//                               )}
+
+//                               {/* Camera Debug Info (for testing) */}
+//                               {cameraActive && (
+//                                 <div style={{ 
+//                                   marginBottom: '20px',
+//                                   background: '#f8fafc',
+//                                   padding: '15px',
+//                                   borderRadius: '8px',
+//                                   border: '1px solid #e2e8f0',
+//                                   fontSize: '0.85rem'
+//                                 }}>
+//                                   <h6 style={{ margin: '0 0 10px 0', color: '#475569' }}>Camera Debug Info:</h6>
+//                                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', color: '#64748b' }}>
+//                                     <div>Status: {activeCameras[booking.id]?.videoReady ? '✅ Ready' : '⏳ Loading'}</div>
+//                                     <div>Stream: {activeCameras[booking.id]?.streamActive ? '✅ Active' : '❌ Inactive'}</div>
+//                                     <div>Mode: {activeCameras[booking.id]?.mode}</div>
+//                                     <div>Playing: {activeCameras[booking.id]?.playing ? '✅ Yes' : '❌ No'}</div>
+//                                     <div>Error: {activeCameras[booking.id]?.error ? '❌ Yes' : '✅ None'}</div>
+//                                     <div>Timer: {formatRemainingTime(remainingTime)}</div>
+//                                   </div>
+//                                   {activeCameras[booking.id]?.error && (
+//                                     <div style={{ marginTop: '8px', padding: '8px', background: '#fee2e2', borderRadius: '4px', color: '#dc2626' }}>
+//                                       Error: {activeCameras[booking.id].error}
+//                                     </div>
+//                                   )}
+//                                 </div>
+//                               )}
+
+//                               {/* Live Camera Feed */}
+//                               {cameraActive && (
+//                                 <div style={{ 
+//                                   marginBottom: '25px',
+//                                   background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+//                                   padding: '25px',
+//                                   borderRadius: '16px',
+//                                   border: '2px solid #10b981'
+//                                 }}>
+//                                   <h5 style={{ 
+//                                     margin: '0 0 20px 0', 
+//                                     display: 'flex', 
+//                                     alignItems: 'center',
+//                                     justifyContent: 'space-between',
+//                                     fontSize: '1.2rem'
+//                                   }}>
+//                                     <div style={{ display: 'flex', alignItems: 'center' }}>
+//                                       <Video size={24} style={{ marginRight: '12px', color: '#10b981' }} />
+//                                       <span style={{ color: '#10b981', fontWeight: 'bold' }}>
+//                                         🔴 LIVE CAMERA MONITORING
+//                                       </span>
+//                                     </div>
+//                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+//                                       <div style={{
+//                                         padding: '8px 16px',
+//                                         background: '#10b981',
+//                                         color: 'white',
+//                                         borderRadius: '8px',
+//                                         fontSize: '0.9rem',
+//                                         fontWeight: 'bold'
+//                                       }}>
+//                                         ⏱️ {formatRemainingTime(remainingTime)}
+//                                       </div>
+//                                     </div>
+//                                   </h5>
+                                  
+//                                   <div style={{ 
+//                                     display: 'flex',
+//                                     flexDirection: 'column',
+//                                     alignItems: 'center'
+//                                   }}>
+//                                     {renderVideoElement(booking.id)}
+//                                   </div>
+//                                 </div>
+//                               )}
+
+//                               {/* Start Button and Camera Info - Only show if not completed */}
+//                               {displayStatus === 'active' && 
+//                                !cameraActive && 
+//                                !isCompleted && (
+//                                 <div style={{ textAlign: 'center' }}>
+//                                   {/* Camera Permission Check */}
+//                                   <div style={{ 
+//                                     marginBottom: '20px',
+//                                     padding: '15px',
+//                                     background: '#f0f9ff',
+//                                     borderRadius: '8px',
+//                                     border: '1px solid #0ea5e9'
+//                                   }}>
+//                                     <h6 style={{ margin: '0 0 10px 0', color: '#0c4a6e' }}>📹 Camera Requirements:</h6>
+//                                     <ul style={{ margin: '0', paddingLeft: '20px', color: '#0c4a6e', textAlign: 'left' }}>
+//                                       <li>Allow camera permissions when prompted</li>
+//                                       <li>Ensure no other apps are using your camera</li>
+//                                       <li>Use a supported browser (Chrome, Firefox, Safari)</li>
+//                                       <li>Enable HTTPS for camera access</li>
+//                                     </ul>
+//                                   </div>
+                                  
+//                                   <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
+//                                     <button
+//                                       onClick={() => handleStartCheckin(booking.id)}
+//                                       style={{
+//                                         background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+//                                         color: 'white',
+//                                         border: 'none',
+//                                         padding: '16px 32px',
+//                                         borderRadius: '12px',
+//                                         cursor: 'pointer',
+//                                         display: 'flex',
+//                                         alignItems: 'center',
+//                                         fontWeight: 'bold',
+//                                         fontSize: '1.1rem',
+//                                         boxShadow: '0 8px 16px rgba(16, 185, 129, 0.3)'
+//                                       }}
+//                                     >
+//                                       <Video size={20} style={{ marginRight: '12px' }} />
+//                                       Start Live Camera Monitoring
+//                                     </button>
+                                    
+//                                     <button
+//                                       onClick={async () => {
+//                                         const permission = await checkCameraPermissions();
+//                                         alert(`Camera permission status: ${permission}`);
+//                                       }}
+//                                       style={{
+//                                         background: '#f3f4f6',
+//                                         color: '#374151',
+//                                         border: '1px solid #d1d5db',
+//                                         padding: '16px 24px',
+//                                         borderRadius: '12px',
+//                                         cursor: 'pointer',
+//                                         display: 'flex',
+//                                         alignItems: 'center',
+//                                         fontWeight: 'bold',
+//                                         fontSize: '0.9rem'
+//                                       }}
+//                                     >
+//                                       <Camera size={18} style={{ marginRight: '8px' }} />
+//                                       Check Camera Access
+//                                     </button>
+//                                   </div>
+//                                 </div>
+//                               )}
+                              
+//                               {/* Completion Message */}
+//                               {isCompleted && (
+//                                 <div style={{
+//                                   padding: '25px',
+//                                   background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+//                                   border: '3px solid #10b981',
+//                                   borderRadius: '16px',
+//                                   textAlign: 'center'
+//                                 }}>
+//                                   <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#047857', marginBottom: '10px' }}>
+//                                     🎉 Live Camera Simulation Successfully Completed!
+//                                   </div>
+//                                   <div style={{ fontSize: '1.1rem', color: '#065f46' }}>
+//                                     Vehicle KA19EQ1316 completed full check-in and checkout cycle with live camera monitoring
+//                                   </div>
+//                                 </div>
+//                               )}
+//                             </div>
+//                           </div>
+//                         );
+//                       })}
+//                     </div>
+//                   </div>
+//                 )}
+//               </div>
+//             ))
+//           ) : (
+//             <div style={{ 
+//               textAlign: 'center', 
+//               padding: '40px 20px',
+//               color: '#6b7280'
+//             }}>
+//               <Activity size={48} style={{ marginBottom: '16px' }} />
+//               <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem' }}>No Recent Activity</h3>
+//               <p style={{ margin: 0, fontSize: '1rem' }}>
+//                 No parking activities found. Activities will appear here when users book parking spots.
+//               </p>
+//             </div>
+//           )}
+//         </div>
+//       </div>
+      
+//       {/* Enhanced CSS animations */}
+//       <style jsx>{`
+//         @keyframes spin {
+//           from { transform: rotate(0deg); }
+//           to { transform: rotate(360deg); }
+//         }
+        
+//         @keyframes pulse {
+//           0%, 100% { opacity: 1; }
+//           50% { opacity: 0.5; }
+//         }
+        
+//         .loading-spinner {
+//           animation: spin 1s linear infinite;
+//         }
+        
+//         button:hover {
+//           transform: translateY(-2px);
+//           transition: all 0.2s ease;
+//         }
+//       `}</style>
 //     </div>
 //   );
 // };
@@ -3007,77 +1612,147 @@
 
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { rtdb } from '../firebase';
-import { ref, onValue, update, get, set, off } from 'firebase/database';
-import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
 import { 
   Users, ArrowLeft, Clock, MapPin, Activity, ChevronRight, 
-  CreditCard, Banknote, AlertTriangle, CheckCircle, Camera,
-  Bike, Truck, Car
+  CheckCircle, Camera, Bike, Truck, Car, RefreshCw, X, Video, Eye,
+  AlertCircle, StopCircle, XCircle, Play
 } from 'lucide-react';
-import '../styles/UsersList.css';
-
-// Firebase configuration
-const firebaseConfig = {  
-  apiKey: "AIzaSyB9ererNsNonAzH0zQo_GS79XPOyCoMxr4",  
-  authDomain: "waterdtection.firebaseapp.com",  
-  databaseURL: "https://waterdtection-default-rtdb.firebaseio.com",  
-  projectId: "waterdtection",  
-  storageBucket: "waterdtection.firebasestorage.app",  
-  messagingSenderId: "690886375729",  
-  appId: "1:690886375729:web:172c3a47dda6585e4e1810",  
-  measurementId: "G-TXF33Y6XY0"
-};
 
 const UsersList = ({ onBack, recentActivity = [] }) => {
-  // State declarations
+  // All state declarations
   const [users, setUsers] = useState([]);
-  const [allBookings, setAllBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [allBookings, setAllBookings] = useState([
+    {
+      id: 'booking_001',
+      parkingLotName: 'Tech Park Main',
+      spaceId: '1',
+      userId: 'user_001',
+      location: 'Bangalore Tech Park, Whitefield',
+      startTime: new Date(),
+      endTime: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
+      amount: 80,
+      status: 'active',
+      vehicleType: 2,
+      bookingId: 'BP001'
+    },
+    {
+      id: 'booking_002',
+      parkingLotName: 'Central Business District',
+      spaceId: '5',
+      userId: 'user_002',
+      location: 'MG Road, CBD Area',
+      startTime: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+      endTime: new Date(Date.now() + 3 * 60 * 60 * 1000), // 3 hours from now
+      amount: 120,
+      status: 'active',
+      vehicleType: 1,
+      bookingId: 'BP002'
+    },
+    {
+      id: 'booking_003',
+      parkingLotName: 'Indiranagar Metro',
+      spaceId: '12',
+      userId: 'user_003',
+      location: 'Near Indiranagar Metro Station',
+      startTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      endTime: new Date(Date.now() + 1 * 60 * 60 * 1000), // 1 hour from now
+      amount: 60,
+      status: 'active',
+      vehicleType: 3,
+      bookingId: 'BP003'
+    }
+  ]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [expandedActivity, setExpandedActivity] = useState(null);
-  const [userBookings, setUserBookings] = useState([]);
+  const [userBookings, setUserBookings] = useState({});
   const [activityError, setActivityError] = useState(null);
-  const [loadingBookings, setLoadingBookings] = useState(true);
-  const [bookingStates, setBookingStates] = useState({});
-  const [paymentProcessing, setPaymentProcessing] = useState({});
-  const [correctedActivity, setCorrectedActivity] = useState([]);
-  const [verificationResults, setVerificationResults] = useState({});
+  const [loadingBookings, setLoadingBookings] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(0);
   const [occupiedSlots, setOccupiedSlots] = useState([]);
-  const [checkinTimeouts, setCheckinTimeouts] = useState({});
-  const [previousStatus, setPreviousStatus] = useState(0);
-  const [hasCheckedInOnce, setHasCheckedInOnce] = useState(false);
-  const [lastCheckedInBooking, setLastCheckedInBooking] = useState(null);
-  const [processingAction, setProcessingAction] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [firebaseStatus, setFirebaseStatus] = useState(0);
+  
+  // Camera and simulation states
+  const [activeCameras, setActiveCameras] = useState({});
+  const [detectedPlates, setDetectedPlates] = useState({});
+  const [cameraTimers, setCameraTimers] = useState({});
+  const [plateDetectionInterval, setPlateDetectionInterval] = useState({});
+  const [wrongPlateDetections, setWrongPlateDetections] = useState({});
+  const [cameraStartTimes, setCameraStartTimes] = useState({});
+  const [simulationTimers, setSimulationTimers] = useState({});
+  const [simulationStatus, setSimulationStatus] = useState({});
+  
   const [zones, setZones] = useState([
     { id: 1, name: 'Zone A', type: 'Car', occupied: false },
     { id: 2, name: 'Zone B', type: 'Car', occupied: false },
     { id: 3, name: 'Zone C', type: 'Car', occupied: false }
   ]);
-  
-  // References for Firebase nodes
-  const statusRef = useRef(null);
+
+  // Refs for camera functionality
   const videoRefs = useRef({});
   const canvasRefs = useRef({});
+  const streamRefs = useRef({});
+  const cleanupFlags = useRef({});
 
-  // Razorpay Test API Key
-  const RAZORPAY_KEY_ID = 'rzp_test_vg2WzWGNEHJpgj';
+  // Constants
+  const authorizedPlates = [
+    'KA-01-HB-1234',
+    'KA-05-MN-5678', 
+    'KA-02-CD-9012',
+    'KA19EQ1316' // Hardcoded simulation plate
+  ];
 
-  // Helper Functions
-  const extractBookingInfo = (actionText) => {
-    const spaceMatch = actionText.match(/Space\s+#?(\d+)/);
-    const locationMatch = actionText.match(/at\s+([^,]+)(?:\s+at\s+\d+\/\d+\/\d+|$)/);
-    const dateTimeMatch = actionText.match(/(\d+\/\d+\/\d+,\s+\d+:\d+:\d+\s+[AP]M)/);
+  const allSimulatedPlates = [
+    ...authorizedPlates,
+    'KA-03-EF-7890',
+    'KA-04-GH-2468',
+    'TN-09-AB-3456',
+    'MH-12-CD-7890'
+  ];
+
+  // Initialize with booking data mapped to activities based on activity details
+  useEffect(() => {
+    // Create a mapping of user bookings based on activity information
+    const bookingsMap = {};
     
-    return {
-      location: locationMatch ? locationMatch[1].trim() : null,
-      spaceId: spaceMatch ? spaceMatch[1].trim() : null,
-      dateTime: dateTimeMatch ? dateTimeMatch[1].trim() : null
-    };
-  };
+    // Populate bookings for each activity with matching location and space info
+    recentActivity.forEach((activity) => {
+      // Parse the activity action text to extract location and space info
+      // Example format: "completed payment for Space #3" or "booked Space #1 at Kengeri Bus Terminal"
+      const spaceMatch = activity.action?.match(/Space #(\d+)/i);
+      const spaceNumber = spaceMatch ? spaceMatch[1] : '1';
+      
+      let locationName = '';
+      if (activity.action?.includes('at ')) {
+        const locationMatch = activity.action.match(/at\s+([^,]+)(?:,|$)/i);
+        locationName = locationMatch ? locationMatch[1].trim() : '';
+      }
+      
+      // Create a booking that matches the activity description
+      const customBooking = {
+        id: `booking_${activity.id}`,
+        parkingLotName: locationName || 'Parking Lot',
+        spaceId: spaceNumber,
+        userId: activity.user ? `user_${activity.user.toLowerCase()}` : 'user_001',
+        location: locationName ? `${locationName}, Bengaluru` : 'Bengaluru, Karnataka',
+        startTime: new Date(activity.time || Date.now()),
+        endTime: new Date(Date.now() + 4 * 60 * 60 * 1000),
+        amount: 80,
+        status: 'active',
+        vehicleType: Math.floor(Math.random() * 3) + 1, // Random vehicle type
+        bookingId: `BP${activity.id.toString().padStart(3, '0')}`
+      };
+      
+      bookingsMap[activity.id] = [customBooking];
+    });
+    
+    setUserBookings(bookingsMap);
+    setLoading(false);
+    setLoadingBookings(false);
+  }, [recentActivity]);
 
+  // Helper functions
   const formatDateTime = (date) => {
     if (!date) return 'N/A';
     return date.toLocaleString('en-US', {
@@ -3091,21 +1766,6 @@ const UsersList = ({ onBack, recentActivity = [] }) => {
     });
   };
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case 'active':
-        return 'status-active';
-      case 'completed':
-        return 'status-completed';
-      case 'cancelled':
-        return 'status-cancelled';
-      case 'timeout':
-        return 'status-timeout';
-      default:
-        return '';
-    }
-  };
-
   const getTimeDifference = (start, end) => {
     if (!start || !end) return 'N/A';
     const diffMs = end - start;
@@ -3114,1777 +1774,1556 @@ const UsersList = ({ onBack, recentActivity = [] }) => {
     return `${diffHrs}h ${diffMins}m`;
   };
 
-  const determineBookingStatus = (booking) => {
+  const formatRemainingTime = useCallback((ms) => {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }, []);
+
+  const getRemainingTime = useCallback((bookingId) => {
+    const startTime = cameraStartTimes[bookingId];
+    if (!startTime) return 0;
+    
     const now = new Date();
-    const startTime = booking.startTime ? new Date(booking.startTime) : null;
-    const endTime = booking.endTime ? new Date(booking.endTime) : null;
+    const elapsed = now - startTime;
+    const remaining = 300000 - elapsed; // 5 minutes - elapsed
+    
+    return Math.max(0, remaining);
+  }, [cameraStartTimes]);
 
-    if (booking.status === 'cancelled') {
-      return 'cancelled';
-    } else if (booking.status === 'completed') {
+  const getSimulationProgress = useCallback((bookingId) => {
+    const simulation = simulationStatus[bookingId];
+    if (!simulation) return null;
+    
+    const now = new Date();
+    const elapsed = now - simulation.startTime;
+    
+    if (simulation.phase === 'waiting_checkin') {
+      const timeToCheckin = 20000 - elapsed; // 20 seconds
+      if (timeToCheckin > 0) {
+        return {
+          phase: 'waiting_checkin',
+          timeRemaining: timeToCheckin,
+          message: `Check-in in ${Math.ceil(timeToCheckin / 1000)}s`
+        };
+      }
+    } else if (simulation.phase === 'checkin') {
+      const timeToCheckout = 140000 - elapsed; // 2m20s total
+      if (timeToCheckout > 0) {
+        return {
+          phase: 'waiting_checkout',
+          timeRemaining: timeToCheckout,
+          message: `Checkout in ${Math.ceil(timeToCheckout / 1000)}s`
+        };
+      }
+    }
+    
+    return null;
+  }, [simulationStatus]);
+
+  const determineBookingStatus = useCallback((booking) => {
+    if (!booking) return 'active';
+    
+    const bookingId = booking.id;
+    const simulation = simulationStatus[bookingId];
+    const detectedPlate = detectedPlates[bookingId];
+    
+    if (simulation?.completed || (detectedPlate?.isSimulated && detectedPlate?.checkoutTime)) {
       return 'completed';
-    } else if (booking.status === 'timeout') {
-      return 'timeout';
-    } else if (startTime && endTime) {
-      if (now < startTime) {
-        return 'active';
-      } else if (now >= startTime && now <= endTime) {
-        return 'active';
-      } else if (now > endTime) {
-        return 'completed';
-      }
     }
+    
+    if (detectedPlate?.isSimulated && detectedPlate?.checkinTime && !detectedPlate?.checkoutTime) {
+      return 'active';
+    }
+    
     return booking.status || 'active';
-  };
+  }, [simulationStatus, detectedPlates]);
 
-  const getVehicleTypeLabel = (type) => {
-    switch (type) {
-      case 2:
-        return 'Car';
-      case 3:
-        return 'Car';
-      case 4:
-        return 'Car';
-      default:
-        return 'Not specified';
-    }
-  };
-
-  const getVehicleTypeIcon = (type) => {
-    switch (type) {
-      case 2:
-        return <Car size={16} />;
-      case 3:
-        return <Truck size={16} />;
-      case 4:
-        return <Car size={16} />;
-      default:
-        return <Car size={16} />;
-    }
-  };
-
-  const renderZoneIcon = (zoneId) => {
-    switch (zoneId) {
-      case 1:
-        return <Bike size={24} />;
-      case 2:
-        return <Truck size={24} />;
-      case 3:
-        return <Car size={24} />;
-      default:
-        return null;
-    }
-  };
-
-  // Firebase Update Functions
-  const updateBookingWithCheckinData = async (bookingId, vehicleNumber, imageData, vehicleType, slotNumber) => {
-    try {
-      console.log(`Updating booking ${bookingId} with check-in data:`, {
-        vehicleNumber,
-        vehicleType,
-        slotNumber
-      });
-      
-      const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-      await update(bookingRef, { 
-        checkinVehicleNumber: vehicleNumber,
-        checkinImageData: imageData,
-        vehicleType: vehicleType,
-        checkedIn: true,
-        checkinTime: new Date().toISOString()
-      });
-      
-      if (!occupiedSlots.includes(slotNumber)) {
-        const updatedOccupiedSlots = [...occupiedSlots, slotNumber];
-        
-        console.log(`Adding slot ${slotNumber} to occupied slots:`, updatedOccupiedSlots);
-        
-        const slotsRef = ref(rtdb, 'occupied_slots');
-        await set(slotsRef, JSON.stringify(updatedOccupiedSlots));
-        
-        const slotRef = ref(rtdb, 'slot');
-        await set(slotRef, JSON.stringify(slotNumber.toString()));
-      }
-      
-      const connectionRef = ref(rtdb, 'connection_status');
-      const connectionSnapshot = await get(connectionRef);
-      const currentValue = connectionSnapshot.exists() ? parseInt(connectionSnapshot.val()) : 0;
-      const newValue = currentValue + 1;
-      console.log(`Incrementing connection status from ${currentValue} to ${newValue}`);
-      await set(connectionRef, newValue);
-      
-      setupCheckinTimeout(bookingId, slotNumber);
-      
-      // Update userBookings state
-      setUserBookings(prevBookings =>
-        prevBookings.map(booking =>
-          booking.id === bookingId
-            ? { 
-                ...booking, 
-                checkinVehicleNumber: vehicleNumber,
-                checkinImageData: imageData,
-                vehicleType: vehicleType,
-                checkedIn: true,
-                checkinTime: new Date()
-              }
-            : booking
-        )
-      );
-      
-      // Update allBookings state
-      setAllBookings(prevBookings =>
-        prevBookings.map(booking =>
-          booking.id === bookingId
-            ? { 
-                ...booking, 
-                checkinVehicleNumber: vehicleNumber,
-                checkinImageData: imageData,
-                vehicleType: vehicleType,
-                checkedIn: true,
-                checkinTime: new Date()
-              }
-            : booking
-        )
-      );
-      
-      // Store the booking ID as the last checked in booking
-      setLastCheckedInBooking(bookingId);
-      
-      console.log(`Check-in data updated successfully for booking ${bookingId}`);
-      return true;
-    } catch (error) {
-      console.error("Error updating check-in data in Firebase:", error);
-      setActivityError('Failed to update check-in data in booking.');
-      
-      setBookingStates(prev => ({
-        ...prev,
-        [bookingId]: {
-          ...prev[bookingId],
-          webcamActive: false,
-          webcamMode: null,
-          checkinVehicleNumber: null,
-          checkinImageData: null,
-          vehicleType: null,
-          zoneSelected: false,
-        }
-      }));
-      return false;
-    }
-  };
-  
-  const updateBookingWithCheckoutData = async (bookingId, vehicleNumber, imageData, matchValue) => {
-    try {
-      // Find the booking in allBookings if not found in userBookings
-      const booking = userBookings.find(b => b.id === bookingId) || 
-                     allBookings.find(b => b.id === bookingId);
-                     
-      if (!booking) {
-        console.error(`Booking ${bookingId} not found for checkout`);
-        return false;
-      }
-      
-      const slotNumber = booking?.spaceId;
-      
-      const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-      await update(bookingRef, { 
-        checkoutVehicleNumber: vehicleNumber,
-        checkoutImageData: imageData,
-        verificationResult: matchValue,
-        checkedOut: true,
-        checkoutTime: new Date().toISOString()
-      });
-      
-      if (slotNumber && occupiedSlots.includes(parseInt(slotNumber))) {
-        const updatedOccupiedSlots = occupiedSlots.filter(id => id !== parseInt(slotNumber));
-        
-        const slotsRef = ref(rtdb, 'occupied_slots');
-        await set(slotsRef, JSON.stringify(updatedOccupiedSlots));
-        
-        const connectionRef = ref(rtdb, 'connection_status');
-        const connectionSnapshot = await get(connectionRef);
-        const currentValue = connectionSnapshot.exists() ? parseInt(connectionSnapshot.val()) : 0;
-        if (currentValue > 0) {
-          await set(connectionRef, currentValue - 1);
-        }
-      }
-      
-      if (checkinTimeouts[bookingId]) {
-        clearTimeout(checkinTimeouts[bookingId]);
-        setCheckinTimeouts(prev => {
-          const newTimeouts = { ...prev };
-          delete newTimeouts[bookingId];
-          return newTimeouts;
-        });
-      }
-      
-      // Update userBookings state
-      setUserBookings(prevBookings =>
-        prevBookings.map(booking =>
-          booking.id === bookingId
-            ? { 
-                ...booking, 
-                checkoutVehicleNumber: vehicleNumber,
-                checkoutImageData: imageData,
-                verificationResult: matchValue,
-                checkedOut: true,
-                checkoutTime: new Date()
-              }
-            : booking
-        )
-      );
-      
-      // Update allBookings state
-      setAllBookings(prevBookings =>
-        prevBookings.map(booking =>
-          booking.id === bookingId
-            ? { 
-                ...booking, 
-                checkoutVehicleNumber: vehicleNumber,
-                checkoutImageData: imageData,
-                verificationResult: matchValue,
-                checkedOut: true,
-                checkoutTime: new Date()
-              }
-            : booking
-        )
-      );
-      
-      // Reset the last checked in booking since we've checked out
-      setLastCheckedInBooking(null);
-      setHasCheckedInOnce(false);
-      
-      return true;
-    } catch (error) {
-      console.error("Error updating checkout data in Firebase:", error);
-      setActivityError('Failed to update checkout data in booking.');
-      return false;
-    }
-  };
-
-  // Timeout Management
-  const setupCheckinTimeout = (bookingId, slotNumber) => {
-    if (checkinTimeouts[bookingId]) {
-      clearTimeout(checkinTimeouts[bookingId]);
-    }
-    
-    const timeoutId = setTimeout(async () => {
-      try {
-        console.log(`15-minute timeout reached for booking ${bookingId}`);
-        
-        const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-        const bookingSnapshot = await get(bookingRef);
-        
-        if (bookingSnapshot.exists()) {
-          const bookingData = bookingSnapshot.val();
-          
-          if (!bookingData.checkedOut) {
-            console.log(`Auto-releasing slot ${slotNumber} for booking ${bookingId}`);
-            
-            const updatedOccupiedSlots = occupiedSlots.filter(id => id !== parseInt(slotNumber));
-            const slotsRef = ref(rtdb, 'occupied_slots');
-            await set(slotsRef, JSON.stringify(updatedOccupiedSlots));
-            
-            const connectionRef = ref(rtdb, 'connection_status');
-            const connectionSnapshot = await get(connectionRef);
-            const currentValue = connectionSnapshot.exists() ? parseInt(connectionSnapshot.val()) : 0;
-            if (currentValue > 0) {
-              await set(connectionRef, currentValue - 1);
-            }
-            
-            await update(bookingRef, {
-              status: 'timeout',
-              timeoutAt: new Date().toISOString(),
-              autoReleased: true
-            });
-            
-            console.log(`Slot ${slotNumber} automatically released due to 15-minute timeout`);
-          }
-        }
-      } catch (error) {
-        console.error("Error during automatic slot release:", error);
-      }
-      
-      setCheckinTimeouts(prev => {
-        const newTimeouts = { ...prev };
-        delete newTimeouts[bookingId];
-        return newTimeouts;
-      });
-    }, 15 * 60 * 1000); // 15 minutes
-    
-    setCheckinTimeouts(prev => ({
-      ...prev,
-      [bookingId]: timeoutId
-    }));
-  };
-
-  // Automatic Check-in/Check-out Functions
-  const handleAutomaticCheckin = useCallback(async () => {
-    if (processingAction) return;
-    setProcessingAction(true);
-    
-    try {
-      console.log("Starting automatic check-in process");
-      
-      if (allBookings.length === 0) {
-        console.log("No bookings available yet - waiting for data to load");
-        setProcessingAction(false);
-        return;
-      }
-      
-      // Find the most recent active booking that hasn't been checked in
-      const activeBookings = allBookings.filter(booking => 
-        (booking.status === 'active' || booking.status === 'confirmed') && 
-        !booking.checkedIn
-      );
-      
-      // Sort by booking time descending to get the most recent one
-      activeBookings.sort((a, b) => {
-        const timeA = a.bookingTime ? a.bookingTime.getTime() : 0;
-        const timeB = b.bookingTime ? b.bookingTime.getTime() : 0;
-        return timeB - timeA;
-      });
-      
-      const activeBooking = activeBookings[0];
-      
-      if (!activeBooking) {
-        console.log("No eligible bookings found for automatic check-in");
-        setProcessingAction(false);
-        return;
-      }
-      
-      console.log(`Found eligible booking for check-in: ${activeBooking.id}`);
-      
-      const spaceId = activeBooking.spaceId ? parseInt(activeBooking.spaceId) : 1;
-      const vehicleType = 2; // Car
-      const slotNumber = spaceId <= 3 ? spaceId : 1;
-      const vehicleNumber = "AUTO-CHECK-IN";
-      
-      const success = await updateBookingWithCheckinData(
-        activeBooking.id,
-        vehicleNumber,
-        null,
-        vehicleType,
-        slotNumber
-      );
-      
-      if (success) {
-        setBookingStates(prev => ({
-          ...prev,
-          [activeBooking.id]: {
-            ...prev[activeBooking.id],
-            webcamActive: false,
-            webcamMode: null,
-            checkinVehicleNumber: vehicleNumber,
-            vehicleType: vehicleType,
-            zoneSelected: true,
-            successMessage: 'Automatic check-in completed successfully.',
-          }
-        }));
-        
-        // Set the last checked in booking
-        setLastCheckedInBooking(activeBooking.id);
-        
-        console.log(`Automatic check-in completed for booking ${activeBooking.id}`);
-        
-        // Reset Firebase status to 0 after 3 seconds
-        setTimeout(() => {
-          try {
-            const statusRef = ref(rtdb, 'Car_Parking/Status/status');
-            set(statusRef, 0)
-              .then(() => {
-                console.log("Auto-reset status to 0 after check-in");
-              })
-              .catch(error => {
-                console.error("Error resetting status to 0 after check-in:", error);
-              })
-              .finally(() => {
-                setProcessingAction(false);
-              });
-          } catch (error) {
-            console.error("Error in status reset timeout:", error);
-            setProcessingAction(false);
-          }
-        }, 3000);
-      } else {
-        setProcessingAction(false);
-      }
-    } catch (error) {
-      console.error("Error during automatic check-in:", error);
-      setProcessingAction(false);
-    }
-  }, [allBookings, occupiedSlots, processingAction]);
-  
-  const handleAutomaticCheckout = useCallback(async () => {
-    if (processingAction) return;
-    setProcessingAction(true);
-    
-    try {
-      console.log("Starting automatic check-out process");
-      
-      if (!lastCheckedInBooking) {
-        console.log("No previously checked-in booking found for checkout");
-        setProcessingAction(false);
-        return;
-      }
-      
-      // Find the booking that was previously checked in
-      const bookingToCheckout = allBookings.find(b => b.id === lastCheckedInBooking);
-      
-      if (!bookingToCheckout) {
-        console.log(`Previously checked-in booking ${lastCheckedInBooking} not found`);
-        setProcessingAction(false);
-        return;
-      }
-      
-      if (bookingToCheckout.checkedOut) {
-        console.log(`Booking ${lastCheckedInBooking} already checked out`);
-        setProcessingAction(false);
-        return;
-      }
-      
-      console.log(`Found eligible booking for check-out: ${bookingToCheckout.id}`);
-      
-      const vehicleNumber = "AUTO-CHECK-OUT";
-      
-      const success = await updateBookingWithCheckoutData(
-        bookingToCheckout.id,
-        vehicleNumber,
-        null,
-        1
-      );
-      
-      if (success) {
-        setVerificationResults(prev => ({
-          ...prev,
-          [bookingToCheckout.id]: {
-            isMatch: true,
-            matchValue: 1,
-            message: 'Vehicle automatically verified by system!',
-            checkoutVehicleNumber: vehicleNumber,
-            checkoutImageData: null
-          }
-        }));
-        
-        setBookingStates(prev => ({
-          ...prev,
-          [bookingToCheckout.id]: {
-            ...prev[bookingToCheckout.id],
-            checkoutVehicleNumber: vehicleNumber,
-            successMessage: 'Automatic check-out completed successfully.',
-          }
-        }));
-        
-        console.log(`Automatic check-out completed for booking ${bookingToCheckout.id}`);
-        
-        // Reset Firebase status to 0 after 3 seconds
-        setTimeout(() => {
-          try {
-            const statusRef = ref(rtdb, 'Car_Parking/Status/status');
-            set(statusRef, 0)
-              .then(() => {
-                console.log("Auto-reset status to 0 after check-out");
-              })
-              .catch(error => {
-                console.error("Error resetting status to 0 after check-out:", error);
-              })
-              .finally(() => {
-                setProcessingAction(false);
-              });
-          } catch (error) {
-            console.error("Error in status reset timeout:", error);
-            setProcessingAction(false);
-          }
-        }, 3000);
-      } else {
-        setProcessingAction(false);
-      }
-    } catch (error) {
-      console.error("Error during automatic check-out:", error);
-      setProcessingAction(false);
-    }
-  }, [allBookings, lastCheckedInBooking, processingAction]);
-
-  // Event Handlers
-  const handleZoneClick = (zoneId) => {
-    const zoneBookings = allBookings.filter(booking => {
-      if (zoneId === 1 && booking.vehicleType === 2) return true;
-      if (zoneId === 2 && booking.vehicleType === 3) return true;
-      if (zoneId === 3 && booking.vehicleType === 4) return true;
-      return false;
-    });
-    
-    if (occupiedSlots.includes(zoneId) && connectionStatus > 0) {
-      const activeBooking = zoneBookings.find(booking => 
-        booking.status === 'active' || booking.status === 'confirmed'
-      );
-      
-      if (activeBooking) {
-        const activity = correctedActivity.find(a => 
-          a.action && a.action.includes(`Space #${activeBooking.spaceId}`)
-        );
-        
-        if (activity) {
-          handleActivityClick(activity);
-        }
-      }
-    }
-  };
-
-  const handleActivityClick = (activity) => {
-    if (expandedActivity === activity.id) {
-      setExpandedActivity(null);
-      setUserBookings([]);
-      setActivityError(null);
-      setBookingStates({});
-      return;
-    }
-
-    setExpandedActivity(activity.id);
-    setActivityError(null);
-    setBookingStates({});
-    
-    try {
-      if (loadingBookings) {
-        setActivityError("Still loading booking data. Please wait...");
-        return;
-      }
-
-      if (allBookings.length === 0) {
-        setActivityError("No booking data available.");
-        return;
-      }
-
-      const { location, spaceId, dateTime } = extractBookingInfo(activity.action);
-      const userObj = users.find(user => user.name === activity.user);
-      const userId = userObj ? userObj.id : null;
-      
-      let filteredBookings = [];
-      
-      if (userId && spaceId) {
-        filteredBookings = allBookings.filter(booking => 
-          booking.userId === userId && 
-          String(booking.spaceId) === String(spaceId)
-        );
-      }
-      
-      if (filteredBookings.length === 0 && (spaceId || location)) {
-        filteredBookings = allBookings.filter(booking => {
-          const spaceMatch = spaceId ? String(booking.spaceId) === String(spaceId) : false;
-          const locationMatch = location && booking.parkingLotName ? 
-            booking.parkingLotName.includes(location) : false;
-          
-          return spaceMatch || locationMatch;
-        });
-      }
-      
-      if (filteredBookings.length === 0 && userId) {
-        filteredBookings = allBookings.filter(booking => booking.userId === userId);
-      }
-      
-      if (filteredBookings.length === 0) {
-        const firstName = activity.user.split(' ')[0];
-        
-        filteredBookings = allBookings.filter(booking => {
-          const bookingValues = Object.values(booking).map(val => 
-            typeof val === 'string' ? val.toLowerCase() : ''
-          );
-          
-          const hasUserName = bookingValues.some(val => 
-            val.includes(firstName.toLowerCase())
-          );
-          
-          let timeMatch = false;
-          if (dateTime) {
-            const activityTime = new Date(dateTime);
-            const bookingTime = booking.bookingTime;
-            if (bookingTime) {
-              timeMatch = Math.abs(bookingTime - activityTime) < 1000 * 60 * 60;
-            }
-          }
-          
-          return hasUserName || timeMatch;
-        });
-      }
-      
-      setUserBookings(filteredBookings);
-      
-      if (filteredBookings.length === 0) {
-        setActivityError(`No bookings found related to this activity for ${activity.user}.`);
-      }
-    } catch (error) {
-      console.error("Error processing activity:", error);
-      setActivityError('Failed to process user activity data: ' + error.message);
-    }
-  };
-
-  // Image Capture Functions
-  const captureCheckinImage = (bookingId) => {
+  // Core camera functions
+  const captureImageFromVideo = useCallback((bookingId) => {
     const video = videoRefs.current[bookingId];
     const canvas = canvasRefs.current[bookingId];
     
-    if (!video || !canvas) {
-      console.error('Video or canvas reference not found.');
+    if (!video || !canvas) return null;
+    
+    const context = canvas.getContext('2d');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    
+    try {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg');
+    } catch (error) {
+      console.error('Error capturing image:', error);
+      return null;
+    }
+  }, []);
+
+  // Simulation functions
+  const simulateCheckin = useCallback(async (bookingId) => {
+    const hardcodedPlate = 'KA19EQ1316';
+    
+    console.log(`🎬 SIMULATION: Starting check-in for booking ${bookingId}`);
+    
+    setSimulationStatus(prev => ({
+      ...prev,
+      [bookingId]: {
+        ...prev[bookingId],
+        phase: 'checkin',
+        plateNumber: hardcodedPlate,
+        checkinTime: new Date()
+      }
+    }));
+    
+    setActiveCameras(prev => ({
+      ...prev,
+      [bookingId]: {
+        ...prev[bookingId],
+        simulatingCheckin: true,
+        simulationPlate: hardcodedPlate
+      }
+    }));
+    
+    const imageData = captureImageFromVideo(bookingId) || 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD//2Q=';
+    
+    setStatusMessage(`🎬 SIMULATION: Check-in successful! Vehicle ${hardcodedPlate} detected at ${new Date().toLocaleTimeString()}`);
+    
+    setDetectedPlates(prev => ({
+      ...prev,
+      [bookingId]: {
+        plateNumber: hardcodedPlate,
+        checkinTime: new Date(),
+        imageData: imageData,
+        isAuthorized: true,
+        isSimulated: true
+      }
+    }));
+    
+    setActiveCameras(prev => ({
+      ...prev,
+      [bookingId]: {
+        ...prev[bookingId],
+        mode: 'waiting_checkout',
+        checkedIn: true,
+        simulatingCheckin: false,
+        waitingForCheckout: true
+      }
+    }));
+    
+    console.log(`🎬 SIMULATION: Check-in completed for booking ${bookingId}`);
+  }, [captureImageFromVideo]);
+
+  const simulateCheckout = useCallback(async (bookingId) => {
+    const hardcodedPlate = 'KA19EQ1316';
+    
+    console.log(`🎬 SIMULATION: Starting checkout for booking ${bookingId}`);
+    
+    setSimulationStatus(prev => ({
+      ...prev,
+      [bookingId]: {
+        ...prev[bookingId],
+        phase: 'checkout',
+        checkoutTime: new Date()
+      }
+    }));
+    
+    setActiveCameras(prev => ({
+      ...prev,
+      [bookingId]: {
+        ...prev[bookingId],
+        simulatingCheckout: true,
+        waitingForCheckout: false
+      }
+    }));
+    
+    const imageData = captureImageFromVideo(bookingId) || 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD//2Q=';
+    
+    setStatusMessage(`🎬 SIMULATION: Checkout successful! Vehicle ${hardcodedPlate} departed at ${new Date().toLocaleTimeString()}`);
+    
+    setDetectedPlates(prev => ({
+      ...prev,
+      [bookingId]: {
+        ...prev[bookingId],
+        checkoutTime: new Date(),
+        completed: true
+      }
+    }));
+    
+    setSimulationStatus(prev => ({
+      ...prev,
+      [bookingId]: {
+        ...prev[bookingId],
+        phase: 'completed',
+        completed: true
+      }
+    }));
+    
+    setTimeout(() => {
+      stopCameraMonitoring(bookingId);
+      setStatusMessage(`🎬 SIMULATION: Complete! Booking ${bookingId} marked as completed.`);
+      setTimeout(() => setStatusMessage(''), 5000);
+    }, 2000);
+    
+    console.log(`🎬 SIMULATION: Checkout completed for booking ${bookingId}`);
+  }, [captureImageFromVideo]);
+
+  const setupSimulationTimers = useCallback((bookingId) => {
+    console.log(`🎬 SIMULATION: Setting up timers for booking ${bookingId}`);
+    
+    setSimulationStatus(prev => ({
+      ...prev,
+      [bookingId]: {
+        phase: 'waiting_checkin',
+        startTime: new Date()
+      }
+    }));
+    
+    const checkinTimer = setTimeout(() => {
+      simulateCheckin(bookingId);
+    }, 20000); // 20 seconds
+    
+    const checkoutTimer = setTimeout(() => {
+      simulateCheckout(bookingId);
+    }, 140000); // 2 minutes 20 seconds
+    
+    setSimulationTimers(prev => ({
+      ...prev,
+      [bookingId]: {
+        checkinTimer,
+        checkoutTimer
+      }
+    }));
+    
+    console.log(`🎬 SIMULATION: Timers set for booking ${bookingId}`);
+  }, [simulateCheckin, simulateCheckout]);
+
+  const clearSimulationTimers = useCallback((bookingId) => {
+    const timers = simulationTimers[bookingId];
+    if (timers) {
+      if (timers.checkinTimer) clearTimeout(timers.checkinTimer);
+      if (timers.checkoutTimer) clearTimeout(timers.checkoutTimer);
+      
+      setSimulationTimers(prev => {
+        const newTimers = { ...prev };
+        delete newTimers[bookingId];
+        return newTimers;
+      });
+    }
+    
+    setSimulationStatus(prev => {
+      const newStatus = { ...prev };
+      delete newStatus[bookingId];
+      return newStatus;
+    });
+  }, [simulationTimers]);
+
+  // Camera monitoring functions
+  const stopCameraMonitoring = useCallback((bookingId) => {
+    if (cleanupFlags.current[bookingId]) {
       return;
     }
     
-    const context = canvas.getContext('2d');
+    cleanupFlags.current[bookingId] = true;
+    console.log(`Stopping camera monitoring for booking ${bookingId}`);
     
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    const imageDataUrl = canvas.toDataURL('image/jpeg');
-    
-    const stream = video.srcObject;
-    if (stream) {
-      const tracks = stream.getTracks();
-      tracks.forEach(track => track.stop());
-      video.srcObject = null;
-    }
-    
-    const stateCode = ['KA', 'MH', 'TN', 'AP', 'DL'][Math.floor(Math.random() * 5)];
-    const regionCode = `${Math.floor(1 + Math.random() * 99)}`.padStart(2, '0');
-    const letterCode = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + 
-                      String.fromCharCode(65 + Math.floor(Math.random() * 26));
-    const numberCode = `${Math.floor(1000 + Math.random() * 9000)}`;
-    
-    const simulatedVehicleNumber = `${stateCode}-${regionCode}-${letterCode}-${numberCode}`;
-    
-    setBookingStates(prev => ({
-      ...prev,
-      [bookingId]: {
-        ...prev[bookingId],
-        webcamActive: true,
-        webcamMode: 'zonepicker',
-        checkinVehicleNumber: simulatedVehicleNumber,
-        checkinImageData: imageDataUrl,
-        successMessage: null,
-      }
-    }));
-  };
-
-  const selectZone = (bookingId, zoneType) => {
-    let vehicleType;
-    let slotNumber;
-    
-    switch (zoneType) {
-      case 'A':
-        vehicleType = 2;
-        slotNumber = 1;
-        break;
-      case 'B':
-        vehicleType = 3;
-        slotNumber = 2;
-        break;
-      case 'C':
-        vehicleType = 4;
-        slotNumber = 3;
-        break;
-      default:
-        vehicleType = null;
-        slotNumber = null;
-    }
-    
-    setBookingStates(prev => ({
-      ...prev,
-      [bookingId]: {
-        ...prev[bookingId],
-        webcamActive: false,
-        webcamMode: null,
-        vehicleType: vehicleType,
-        zoneSelected: true,
-        successMessage: 'Check-in successful! Vehicle number plate captured.',
-      }
-    }));
-    
-    updateBookingWithCheckinData(
-      bookingId, 
-      bookingStates[bookingId].checkinVehicleNumber, 
-      bookingStates[bookingId].checkinImageData, 
-      vehicleType,
-      slotNumber
-    );
-  };
-
-  // Payment Functions
-  const handlePaymentMethod = async (bookingId, method) => {
-    setBookingStates(prev => ({
-      ...prev,
-      [bookingId]: {
-        ...prev[bookingId],
-        paymentMethod: method,
-        successMessage: null,
-      }
-    }));
-
-    if (method === 'cash') {
-      processCashPayment(bookingId);
-    } else if (method === 'razorpay') {
-      await initiateRazorpayPayment(bookingId);
-    }
-  };
-
-  const processCashPayment = async (bookingId) => {
-    setPaymentProcessing(prev => ({ ...prev, [bookingId]: true }));
     try {
-      const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-      await update(bookingRef, { 
-        status: 'completed',
-        paymentMethod: 'cash',
-        endTime: new Date().toISOString(),
-        paidAt: new Date().toISOString()
+      clearSimulationTimers(bookingId);
+      
+      if (streamRefs.current[bookingId]) {
+        const tracks = streamRefs.current[bookingId].getTracks();
+        tracks.forEach(track => track.stop());
+        delete streamRefs.current[bookingId];
+      }
+      
+      if (videoRefs.current[bookingId]) {
+        videoRefs.current[bookingId].srcObject = null;
+      }
+      
+      if (plateDetectionInterval[bookingId]) {
+        clearInterval(plateDetectionInterval[bookingId]);
+        setPlateDetectionInterval(prev => {
+          const newIntervals = { ...prev };
+          delete newIntervals[bookingId];
+          return newIntervals;
+        });
+      }
+      
+      if (cameraTimers[bookingId]) {
+        clearTimeout(cameraTimers[bookingId]);
+        setCameraTimers(prev => {
+          const newTimers = { ...prev };
+          delete newTimers[bookingId];
+          return newTimers;
+        });
+      }
+      
+      setCameraStartTimes(prev => {
+        const newTimes = { ...prev };
+        delete newTimes[bookingId];
+        return newTimes;
       });
       
-      setUserBookings(prevBookings =>
-        prevBookings.map(booking =>
-          booking.id === bookingId
-            ? { 
-                ...booking, 
-                status: 'completed', 
-                paymentMethod: 'cash', 
-                endTime: new Date(),
-                paidAt: new Date()
-              }
-            : booking
-        )
-      );
+      setActiveCameras(prev => {
+        const newCameras = { ...prev };
+        delete newCameras[bookingId];
+        return newCameras;
+      });
       
-      setBookingStates(prev => ({
-        ...prev,
-        [bookingId]: {
-          ...prev[bookingId],
-          webcamActive: false,
-          webcamMode: null,
-          successMessage: 'Payment successful!',
-        }
-      }));
     } catch (error) {
-      console.error("Error updating booking status for cash payment:", error);
-      setActivityError('Failed to process cash payment. Please try again.');
+      console.error(`Error during cleanup for booking ${bookingId}:`, error);
+    } finally {
+      setTimeout(() => {
+        if (cleanupFlags.current[bookingId]) {
+          delete cleanupFlags.current[bookingId];
+        }
+      }, 1000);
+    }
+  }, [clearSimulationTimers, plateDetectionInterval, cameraTimers]);
+
+  const startCameraMonitoring = useCallback(async (bookingId, mode) => {
+    try {
+      console.log(`Starting camera monitoring for booking ${bookingId} in ${mode} mode`);
       
-      setBookingStates(prev => ({
+      const startTime = new Date();
+      setCameraStartTimes(prev => ({
+        ...prev,
+        [bookingId]: startTime
+      }));
+      
+      setActiveCameras(prev => ({
         ...prev,
         [bookingId]: {
-          ...prev[bookingId],
-          paymentMethod: null,
+          active: true,
+          mode: mode,
+          startTime: startTime,
+          monitoring: true,
+          loading: true,
+          error: null,
+          persistent: true,
+          hasSimulation: true
         }
       }));
-    } finally {
-      setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-    }
-  };
-
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true);
-        return;
-      }
       
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
+      setupSimulationTimers(bookingId);
       
-      script.onload = () => {
-        console.log("Razorpay SDK loaded successfully");
-        resolve(true);
-      };
+      // Set 5-minute timer
+      const mainTimer = setTimeout(() => {
+        console.log(`5-minute timer expired for booking ${bookingId}`);
+        stopCameraMonitoring(bookingId);
+        setStatusMessage(`Camera monitoring ended after 5 minutes for booking ${bookingId}`);
+        setTimeout(() => setStatusMessage(''), 3000);
+      }, 300000);
       
-      script.onerror = () => {
-        console.error("Failed to load Razorpay SDK");
-        resolve(false);
-      };
+      setCameraTimers(prev => ({
+        ...prev,
+        [bookingId]: mainTimer
+      }));
       
-      document.body.appendChild(script);
-    });
-  };
-
-  const initiateRazorpayPayment = async (bookingId) => {
-    setPaymentProcessing(prev => ({ ...prev, [bookingId]: true }));
-    try {
-      const razorpayLoaded = await loadRazorpayScript();
-      if (!razorpayLoaded) {
-        setActivityError('Razorpay SDK failed to load. Please check your internet connection.');
-        setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-        setBookingStates(prev => ({
+      // First ensure video element exists
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const videoElement = videoRefs.current[bookingId];
+      if (!videoElement) {
+        console.error(`Video element not found for booking ${bookingId}`);
+        setActiveCameras(prev => ({
           ...prev,
           [bookingId]: {
             ...prev[bookingId],
-            paymentMethod: null,
+            loading: false,
+            error: 'Video element not ready. Please try again.',
+            ready: false
           }
         }));
         return;
       }
-
-      const booking = userBookings.find(b => b.id === bookingId);
-      if (!booking) {
-        setActivityError('Booking not found. Please try again.');
-        setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-        return;
-      }
-
-      const user = users.find(user => user.id === booking.userId) || {};
       
-      let durationText = 'Parking';
-      if (booking.startTime && booking.endTime) {
-        const durationMs = booking.endTime - booking.startTime;
-        const diffHrs = Math.floor(durationMs / (1000 * 60 * 60));
-        const diffMins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-        durationText = `${diffHrs}h ${diffMins}m Parking`;
-      }
-
-      const orderIdPrefix = 'ord';
-      const randomId = Math.random().toString(36).substring(2, 10);
-      const orderId = `${orderIdPrefix}_${Date.now()}_${randomId}`;
-
-      const amount = booking.amount || 80;
-
-      const options = {
-        key: RAZORPAY_KEY_ID,
-        amount: amount * 100,
-        currency: 'INR',
-        name: 'Smart Parking',
-        description: `Payment for ${durationText} at ${booking.parkingLotName || 'Parking Lot'}`,
-        order_id: orderId,
-        handler: function(response) {
-          console.log("Payment successful", response);
-          handleRazorpaySuccess(bookingId, response);
-        },
-        prefill: {
-          name: user.name || 'Customer',
-          email: user.email || '',
-          contact: user.phone || '',
-        },
-        notes: {
-          bookingId: booking.id,
-          parkingLotName: booking.parkingLotName,
-          spaceId: booking.spaceId,
-          startTime: booking.startTime ? booking.startTime.toISOString() : '',
-        },
-        theme: {
-          color: '#3b82f6',
-        },
-        modal: {
-          ondismiss: function() {
-            console.log('Payment dismissed');
-            setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-            setBookingStates(prev => ({
-              ...prev,
-              [bookingId]: {
-                ...prev[bookingId],
-                paymentMethod: null,
-              }
-            }));
-          }
-        }
-      };
-
-      const razorpay = new window.Razorpay(options);
+      console.log('Video element found, requesting camera access...');
       
-      razorpay.on('payment.failed', function(response) {
-        console.error('Payment failed', response.error);
-        handleRazorpayFailure(bookingId, response.error);
-      });
-      
-      razorpay.open();
-    } catch (error) {
-      console.error("Error initiating Razorpay payment:", error);
-      setActivityError(`Failed to initiate payment: ${error.message}`);
-      setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-      setBookingStates(prev => ({
-        ...prev,
-        [bookingId]: {
-          ...prev[bookingId],
-          paymentMethod: null,
-        }
-      }));
-    }
-  };
-
-  const handleRazorpaySuccess = async (bookingId, paymentResponse) => {
-    console.log("Processing successful payment", bookingId, paymentResponse);
-    try {
-      const bookingRef = ref(rtdb, `bookings/${bookingId}`);
-      await update(bookingRef, { 
-        status: 'completed',
-        paymentMethod: 'razorpay',
-        paymentId: paymentResponse.razorpay_payment_id,
-        orderId: paymentResponse.razorpay_order_id,
-        paymentSignature: paymentResponse.razorpay_signature,
-        endTime: new Date().toISOString(),
-        paidAt: new Date().toISOString()
-      });
-
-      setUserBookings(prevBookings =>
-        prevBookings.map(booking =>
-          booking.id === bookingId
-            ? { 
-                ...booking, 
-                status: 'completed', 
-                paymentMethod: 'razorpay',
-                paymentId: paymentResponse.razorpay_payment_id,
-                endTime: new Date(),
-                paidAt: new Date()
-              }
-            : booking
-        )
-      );
-      
-      setBookingStates(prev => ({
-        ...prev,
-        [bookingId]: {
-          ...prev[bookingId],
-          webcamActive: false,
-          webcamMode: null,
-          paymentMethod: null,
-          successMessage: 'Payment successful!',
-        }
-      }));
-    } catch (error) {
-      console.error("Error updating booking after payment:", error);
-      setActivityError('Payment was successful, but we had trouble updating your booking. Please contact support.');
-    } finally {
-      setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-    }
-  };
-
-  const handleRazorpayFailure = (bookingId, error) => {
-    console.error("Payment failed", error);
-    
-    setActivityError(`Payment failed: ${error.description || 'Unknown error occurred'}`);
-    setPaymentProcessing(prev => ({ ...prev, [bookingId]: false }));
-    
-    setBookingStates(prev => ({
-      ...prev,
-      [bookingId]: {
-        ...prev[bookingId],
-        paymentMethod: null,
-      }
-    }));
-  };
-
-  // Force a status check when needed
-  const forceStatusCheck = useCallback(async () => {
-    try {
-      if (!statusRef.current) {
-        statusRef.current = ref(rtdb, 'Car_Parking/Status/status');
-      }
-      
-      console.log("Performing force status check");
-      const snapshot = await get(statusRef.current);
-      
-      if (snapshot.exists()) {
-        const currentStatus = parseInt(snapshot.val());
-        console.log(`Force status check: Current value = ${currentStatus}, Previous value = ${previousStatus}`);
+      // Request camera access with better constraints
+      let stream;
+      try {
+        // Try different camera constraints for better compatibility
+        const constraints = {
+          video: {
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+            frameRate: { ideal: 30, min: 15 },
+            facingMode: { ideal: 'environment', exact: undefined }
+          },
+          audio: false
+        };
         
-        if (currentStatus !== previousStatus) {
-          console.log(`Updating status from ${previousStatus} to ${currentStatus}`);
-          setPreviousStatus(currentStatus);
-          
-          // If status is 1 and we haven't processed it yet, handle it
-          if (currentStatus === 1 && !processingAction) {
-            if (!hasCheckedInOnce || !lastCheckedInBooking) {
-              console.log("Force trigger: Starting automatic check-in");
-              handleAutomaticCheckin();
-              setHasCheckedInOnce(true);
-            } else {
-              console.log("Force trigger: Starting automatic check-out");
-              handleAutomaticCheckout();
-            }
-          }
-        }
-      } else {
-        console.error("Firebase status node doesn't exist!");
-      }
-    } catch (error) {
-      console.error("Error in force status check:", error);
-    }
-  }, [previousStatus, processingAction, hasCheckedInOnce, lastCheckedInBooking, handleAutomaticCheckin, handleAutomaticCheckout]);
-
-  // Set up Firebase listeners and initial data loading
-  useEffect(() => {
-    // Initialize Firebase refs
-    statusRef.current = ref(rtdb, 'Car_Parking/Status/status');
-    const connectionRef = ref(rtdb, 'connection_status');
-    const slotsRef = ref(rtdb, 'occupied_slots');
-    const slotRef = ref(rtdb, 'slot');
-    
-    // Set up connection status listener
-    const connectionUnsubscribe = onValue(connectionRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const status = snapshot.val();
-        setConnectionStatus(parseInt(status));
-      }
-    }, (error) => {
-      console.error("Error in connection_status listener:", error);
-    });
-    
-    // Set up status listener
-    const statusUnsubscribe = onValue(statusRef.current, (snapshot) => {
-      if (snapshot.exists()) {
-        try {
-          const currentStatus = parseInt(snapshot.val());
-          console.log(`Status value changed (from listener): ${currentStatus} (Previous: ${previousStatus})`);
-          
-          // Update the status state
-          setPreviousStatus(currentStatus);
-          
-          // Skip processing if we're already handling an action
-          if (processingAction) {
-            console.log("Already processing an action - will not trigger new action");
-            return;
-          }
-          
-          // Only trigger actions when status is 1
-          if (currentStatus === 1) {
-            console.log("Status is 1 - checking if action needed");
-            
-            // If no check-in has happened yet, do a check-in
-            if (!hasCheckedInOnce || !lastCheckedInBooking) {
-              console.log("No check-in recorded yet - performing automatic check-in");
-              handleAutomaticCheckin();
-              setHasCheckedInOnce(true);
-            } 
-            // If we already checked in, do a check-out
-            else {
-              console.log(`Previous check-in exists (booking ${lastCheckedInBooking}) - performing automatic check-out`);
-              handleAutomaticCheckout();
-            }
-          }
-        } catch (error) {
-          console.error("Error processing status change:", error);
-        }
-      } else {
-        console.log("Status node doesn't exist in the database");
-      }
-    }, (error) => {
-      console.error("Error in Car_Parking/Status/status listener:", error);
-    });
-    
-    // Set up occupied slots listener
-    const slotsUnsubscribe = onValue(slotsRef, (snapshot) => {
-      if (snapshot.exists()) {
-        try {
-          const slotsData = snapshot.val();
-          const occupiedSlotsList = Array.isArray(slotsData) ? 
-            slotsData : 
-            typeof slotsData === 'string' ? 
-              JSON.parse(slotsData) : 
-              [];
-          
-          setOccupiedSlots(occupiedSlotsList);
-          
-          setZones(prevZones => 
-            prevZones.map(zone => ({
-              ...zone,
-              occupied: occupiedSlotsList.includes(zone.id)
-            }))
-          );
-        } catch (error) {
-          console.error("Error parsing occupied slots:", error);
-        }
-      } else {
-        set(slotsRef, JSON.stringify([]));
-        setOccupiedSlots([]);
-      }
-    }, (error) => {
-      console.error("Error in occupied_slots listener:", error);
-    });
-    
-    // Set up slot listener
-    const slotUnsubscribe = onValue(slotRef, (snapshot) => {
-      if (snapshot.exists()) {
-        try {
-          const slotValue = snapshot.val();
-          const slotNumber = parseInt(slotValue.replace(/"/g, ''));
-          
-          if (!isNaN(slotNumber)) {
-            if (!occupiedSlots.includes(slotNumber)) {
-              const updatedSlots = [...occupiedSlots, slotNumber];
-              const slotsRef = ref(rtdb, 'occupied_slots');
-              set(slotsRef, JSON.stringify(updatedSlots));
-            }
-          }
-        } catch (error) {
-          console.error("Error handling legacy slot:", error);
-        }
-      }
-    }, (error) => {
-      console.error("Error in slot listener:", error);
-    });
-    
-    // Check the initial status
-    const checkInitialStatus = async () => {
-      try {
-        const snapshot = await get(statusRef.current);
-        if (snapshot.exists()) {
-          const currentStatus = parseInt(snapshot.val());
-          console.log(`Initial status value: ${currentStatus}`);
-          setPreviousStatus(currentStatus);
-          
-          // If status is already 1 on load, trigger action
-          if (currentStatus === 1 && !processingAction) {
-            console.log("Status is already 1 on load - will process actions");
-            // We'll let the regular status listener handle this
-          }
-        }
-      } catch (error) {
-        console.error("Error checking initial status:", error);
-      }
-    };
-    
-    // Run initial status check
-    checkInitialStatus();
-    
-    // Clean up all listeners on component unmount
-    return () => {
-      connectionUnsubscribe();
-      statusUnsubscribe();
-      slotsUnsubscribe();
-      slotUnsubscribe();
-    };
-  }, [occupiedSlots, previousStatus, hasCheckedInOnce, lastCheckedInBooking, handleAutomaticCheckin, handleAutomaticCheckout, processingAction]);
-  
-  // Set up polling mechanism as a backup to ensure status changes are caught
-  useEffect(() => {
-    const statusCheckInterval = setInterval(() => {
-      forceStatusCheck();
-    }, 2000); // Check every 2 seconds
-    
-    return () => {
-      clearInterval(statusCheckInterval);
-    };
-  }, [forceStatusCheck]);
-
-  // Fetch users data
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const usersCollection = collection(db, 'users');
-        const usersSnapshot = await getDocs(usersCollection);
-        const usersList = usersSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setUsers(usersList);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, []);
-
-  // Process activity data
-  useEffect(() => {
-    if (recentActivity.length > 0 && users.length > 0) {
-      const processedActivity = recentActivity.map(activity => {
-        if (activity.userId) {
-          const user = users.find(u => u.id === activity.userId);
-          if (user) {
-            return {
-              ...activity,
-              user: user.name
-            };
-          }
-        }
-        return activity;
-      });
-      
-      setCorrectedActivity(processedActivity);
-    } else {
-      setCorrectedActivity(recentActivity);
-    }
-  }, [recentActivity, users]);
-
-  // Fetch all bookings
-  useEffect(() => {
-    const fetchAllBookings = () => {
-      setLoadingBookings(true);
-      try {
-        const bookingsRef = ref(rtdb, 'bookings');
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log(`✅ Camera stream obtained for booking ${bookingId}`, stream);
         
-        const unsubscribe = onValue(bookingsRef, (snapshot) => {
-          const bookingsList = [];
-          if (snapshot.exists()) {
-            snapshot.forEach((childSnapshot) => {
-              const bookingData = childSnapshot.val();
-              bookingsList.push({
-                id: childSnapshot.key,
-                ...bookingData,
-                bookingTime: bookingData.bookingTime
-                  ? new Date(bookingData.bookingTime)
-                  : null,
-                startTime: bookingData.startTime
-                  ? new Date(bookingData.startTime)
-                  : null,
-                endTime: bookingData.endTime
-                  ? new Date(bookingData.endTime)
-                  : null,
-              });
-            });
-
-            bookingsList.sort((a, b) => {
-              const timeA = a.bookingTime ? a.bookingTime.getTime() : 0;
-              const timeB = b.bookingTime ? b.bookingTime.getTime() : 0;
-              return timeB - timeA;
-            });
+        // Log stream details
+        const videoTrack = stream.getVideoTracks()[0];
+        console.log('Video track settings:', videoTrack.getSettings());
+        
+      } catch (cameraError) {
+        console.error('❌ Camera access error:', cameraError);
+        
+        // Try fallback with any available camera
+        try {
+          console.log('Trying fallback camera constraints...');
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+          console.log('✅ Fallback camera stream obtained');
+        } catch (fallbackError) {
+          console.error('❌ Fallback camera also failed:', fallbackError);
+          
+          setActiveCameras(prev => ({
+            ...prev,
+            [bookingId]: {
+              ...prev[bookingId],
+              loading: false,
+              error: `Camera access denied. Please allow camera permissions in your browser and refresh the page.`,
+              ready: false,
+              persistent: true,
+              hasSimulation: true,
+              needsPermission: true
+            }
+          }));
+          return;
+        }
+      }
+      
+      // Store stream reference
+      streamRefs.current[bookingId] = stream;
+      console.log('Stream stored in refs');
+      
+      // Set up video element immediately
+      videoElement.srcObject = stream;
+      videoElement.muted = true;
+      videoElement.playsInline = true;
+      videoElement.autoplay = true;
+      
+      console.log('Video element configured with stream');
+      
+      // Force video to play and handle the result
+      try {
+        // Wait for metadata to load
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Metadata loading timeout'));
+          }, 5000);
+          
+          const onLoadedMetadata = () => {
+            console.log('✅ Video metadata loaded');
+            clearTimeout(timeout);
+            videoElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+            videoElement.removeEventListener('error', onError);
+            resolve();
+          };
+          
+          const onError = (error) => {
+            console.error('❌ Video metadata error:', error);
+            clearTimeout(timeout);
+            videoElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+            videoElement.removeEventListener('error', onError);
+            reject(error);
+          };
+          
+          if (videoElement.readyState >= 1) {
+            console.log('Video metadata already available');
+            onLoadedMetadata();
+          } else {
+            videoElement.addEventListener('loadedmetadata', onLoadedMetadata);
+            videoElement.addEventListener('error', onError);
           }
-
-          setAllBookings(bookingsList);
-          setLoadingBookings(false);
-        }, (err) => {
-          console.error("Error fetching all bookings:", err);
-          setError('Failed to load booking data. Please try again later.');
-          setLoadingBookings(false);
         });
-
-        return () => unsubscribe();
-      } catch (err) {
-        console.error("Error setting up bookings listener:", err);
-        setError('Failed to load booking data. Please try again later.');
-        setLoadingBookings(false);
+        
+        // Now try to play the video
+        console.log('Attempting to play video...');
+        await videoElement.play();
+        console.log('✅ Video is now playing!');
+        
+        // Video is successfully playing
+        setActiveCameras(prev => ({
+          ...prev,
+          [bookingId]: {
+            ...prev[bookingId],
+            loading: false,
+            ready: true,
+            error: null,
+            videoReady: true,
+            persistent: true,
+            hasSimulation: true,
+            streamActive: true,
+            playing: true
+          }
+        }));
+        
+        console.log(`🎥 Camera setup completed successfully for booking ${bookingId}`);
+        
+      } catch (playError) {
+        console.error('❌ Video play error:', playError);
+        
+        // Video loaded but autoplay failed - show click to play
+        setActiveCameras(prev => ({
+          ...prev,
+          [bookingId]: {
+            ...prev[bookingId],
+            loading: false,
+            ready: false,
+            error: null,
+            videoReady: false,
+            needsUserInteraction: true,
+            persistent: true,
+            hasSimulation: true,
+            streamLoaded: true
+          }
+        }));
+        
+        console.log('Video loaded but needs user interaction to play');
       }
-    };
+      
+    } catch (error) {
+      console.error('❌ Error in camera monitoring setup:', error);
+      
+      setActiveCameras(prev => ({
+        ...prev,
+        [bookingId]: {
+          active: true,
+          mode: mode,
+          startTime: cameraStartTimes[bookingId] || new Date(),
+          loading: false,
+          error: `Setup failed: ${error.message}. Try refreshing the page.`,
+          ready: false,
+          videoReady: false,
+          persistent: true,
+          hasSimulation: true
+        }
+      }));
+    }
+  }, [setupSimulationTimers, stopCameraMonitoring, cameraStartTimes]);
 
-    fetchAllBookings();
+  const handleStartCheckin = useCallback(async (bookingId) => {
+    console.log(`Starting check-in process for booking ${bookingId}`);
+    
+    try {
+      if (activeCameras[bookingId]?.active && activeCameras[bookingId]?.persistent) {
+        setStatusMessage(`Camera is already monitoring for booking ${bookingId}`);
+        setTimeout(() => setStatusMessage(''), 3000);
+        return;
+      }
+      
+      if (activeCameras[bookingId]?.active) {
+        stopCameraMonitoring(bookingId);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      await startCameraMonitoring(bookingId, 'checkin');
+      
+      setStatusMessage(`🎬 Started 5-minute camera monitoring with simulation for booking ${bookingId}`);
+      setTimeout(() => setStatusMessage(''), 5000);
+      
+    } catch (error) {
+      console.error(`Error starting check-in for booking ${bookingId}:`, error);
+      setActivityError(`Failed to start camera monitoring: ${error.message}`);
+    }
+  }, [startCameraMonitoring, activeCameras, stopCameraMonitoring]);
+
+  const handleStopCamera = useCallback((bookingId) => {
+    console.log(`Manual stop requested for booking ${bookingId}`);
+    stopCameraMonitoring(bookingId);
+    setStatusMessage('Camera monitoring and simulation stopped manually.');
+    setTimeout(() => setStatusMessage(''), 3000);
+  }, [stopCameraMonitoring]);
+
+  const handleVideoClick = useCallback(async (bookingId) => {
+    const videoElement = videoRefs.current[bookingId];
+    if (videoElement) {
+      try {
+        console.log('Manual video play attempt...');
+        
+        if (videoElement.paused) {
+          await videoElement.play();
+          console.log('✅ Manual video play successful');
+          
+          setActiveCameras(prev => ({
+            ...prev,
+            [bookingId]: {
+              ...prev[bookingId],
+              ready: true,
+              error: null,
+              videoReady: true,
+              needsUserInteraction: false,
+              persistent: true,
+              hasSimulation: true,
+              playing: true
+            }
+          }));
+        }
+      } catch (error) {
+        console.error('❌ Manual video play failed:', error);
+        setActiveCameras(prev => ({
+          ...prev,
+          [bookingId]: {
+            ...prev[bookingId],
+            error: 'Failed to start video. Please check camera permissions.'
+          }
+        }));
+      }
+    }
   }, []);
 
-  return (
-    <div className="users-list-container">
-      <div className="users-list-header">
-        <button className="back-button" onClick={onBack}>
-          <ArrowLeft size={18} />
-          Back to Dashboard
-        </button>
-        <h1>
-          <Users size={24} style={{ marginRight: '8px' }} />
-          Parking Lists
-        </h1>
-      </div>
+  // Check camera permissions
+  const checkCameraPermissions = useCallback(async () => {
+    try {
+      const result = await navigator.permissions.query({ name: 'camera' });
+      console.log('Camera permission state:', result.state);
+      return result.state;
+    } catch (error) {
+      console.log('Permission query not supported');
+      return 'unknown';
+    }
+  }, []);
 
-      {loading || loadingBookings ? (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading data...</p>
-        </div>
-      ) : (
-        <>
-          {/* Zone Dashboard Section */}
-          <div className="dashboard-card">
-            <div className="card-header">
-              <h2 className="card-title">Parking Zones</h2>
-              <div className="connection-status">
-                <span>Active Vehicles: {connectionStatus}</span>
-                <button 
-                  className={`firebase-status-indicator ${previousStatus === 1 ? 'status-active' : ''}`}
-                  onClick={forceStatusCheck}
-                >
-                  <Activity size={16} className={processingAction ? "spinning" : ""} />
-                  Firebase Status: {previousStatus}
-                  {processingAction && <span className="processing-badge">Processing</span>}
-                </button>
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      Object.keys(streamRefs.current).forEach(bookingId => {
+        stopCameraMonitoring(bookingId);
+      });
+    };
+  }, [stopCameraMonitoring]);
+
+  // Update timer display every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveCameras(prev => ({ ...prev }));
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Enhanced video element renderer with better live streaming
+  const renderVideoElement = (bookingId) => {
+    const camera = activeCameras[bookingId];
+    const remainingTime = getRemainingTime(bookingId);
+    const simulationProgress = getSimulationProgress(bookingId);
+    
+    if (!camera || !camera.active) return null;
+    
+    return (
+      <div style={{ 
+        width: '100%', 
+        maxWidth: '600px', 
+        borderRadius: '12px',
+        marginBottom: '15px',
+        backgroundColor: '#000',
+        position: 'relative',
+        aspectRatio: '16/9',
+        overflow: 'hidden',
+        border: '2px solid #10b981',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+      }}>
+        {camera.loading ? (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#1f2937',
+            color: 'white',
+            flexDirection: 'column',
+            position: 'relative'
+          }}>
+            {/* Always create video element */}
+            <video 
+              ref={el => {
+                if (el) {
+                  console.log(`📹 Creating video ref for booking ${bookingId} during loading`);
+                  videoRefs.current[bookingId] = el;
+                  
+                  // Set up video element properties immediately
+                  el.playsInline = true;
+                  el.muted = true;
+                  el.controls = false;
+                  el.style.width = '100%';
+                  el.style.height = '100%';
+                  el.style.objectFit = 'cover';
+                  el.style.position = 'absolute';
+                  el.style.top = '0';
+                  el.style.left = '0';
+                  el.style.zIndex = '1';
+                }
+              }}
+              playsInline
+              muted
+              autoPlay
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                zIndex: 1
+              }}
+            />
+            <div style={{ 
+              position: 'relative', 
+              zIndex: 10, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center',
+              backgroundColor: 'rgba(31, 41, 55, 0.8)',
+              padding: '20px',
+              borderRadius: '8px'
+            }}>
+              <RefreshCw size={48} style={{ 
+                marginBottom: '15px',
+                animation: 'spin 1s linear infinite'
+              }} />
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Starting Camera...</div>
+              <div style={{ fontSize: '0.9rem', marginTop: '10px', color: '#10b981' }}>
+                Timer: {formatRemainingTime(remainingTime)} remaining
               </div>
-            </div>
-            <div className="zones-container">
-              {zones.map(zone => (
-                <div 
-                  key={zone.id}
-                  className={`zone-card ${zone.occupied ? 'zone-occupied' : 'zone-available'}`}
-                  onClick={() => handleZoneClick(zone.id)}
-                >
-                  <div className="zone-icon">
-                    {renderZoneIcon(zone.id)}
-                  </div>
-                  <div className="zone-info">
-                    <h3>Slot {zone.id}</h3>
-                    <p>{zone.name} ({zone.type})</p>
-                    <div className="zone-status">
-                      <span className="zone-vehicles">
-                        {zone.occupied ? '1 Vehicle' : '0 Vehicles'}
-                      </span>
-                      <span className={`zone-indicator ${zone.occupied ? 'status-occupied' : 'status-available'}`}>
-                        {zone.occupied ? 'Occupied' : 'Available'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="users-table-container">
-            {users.length > 0 ? (
-              <table className="users-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Joined</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td>
-                        <div className="user-avatar">
-                          {user.name ? user.name.charAt(0) : 'U'}
-                        </div>
-                        {user.name || 'Unknown User'}
-                      </td>
-                      <td>{user.email || 'N/A'}</td>
-                      <td>
-                        <span className={`role-badge ${user.role}`}>
-                          {user.role || 'N/A'}
-                        </span>
-                      </td>
-                      <td>
-                        {user.createdAt
-                          ? new Date(user.createdAt.seconds * 1000).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })
-                          : 'N/A'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : users.length === 0 && correctedActivity.length === 0 ? (
-              <div className="no-users">
-                <p>No users found.</p>
-              </div>
-            ) : null}
-          </div>
-
-          {error && <div className="error-message">{error}</div>}
-
-          <div className="dashboard-card" style={{ marginTop: '20px' }}>
-            <div className="card-header">
-              <h2 className="card-title">Recent Activity</h2>
-              <div className="view-all">View All</div>
-            </div>
-            
-            <div className="activity-list">
-              {correctedActivity.length > 0 ? (
-                correctedActivity.map((activity) => (
-                  <div key={activity.id}>
-                    <div
-                      className="activity-item activity-card"
-                      onClick={() => handleActivityClick(activity)}
-                    >
-                      <div className="activity-avatar">
-                        {activity.user.charAt(0)}
-                      </div>
-                      <div className="activity-details">
-                        <p className="activity-text">
-                          <span className="activity-user">{activity.user}</span> {activity.action}
-                        </p>
-                        <p className="activity-time">{activity.time}</p>
-                      </div>
-                      <ChevronRight
-                        size={20}
-                        className={`expand-icon ${expandedActivity === activity.id ? 'rotated' : ''}`}
-                      />
-                    </div>
-
-                    {expandedActivity === activity.id && (
-                      <div className="activity-details-expanded">
-                        <h3>{activity.user}'s Parking History</h3>
-                        {activityError && (
-                          <div className="error-message">{activityError}</div>
-                        )}
-
-                        {userBookings.length === 0 ? (
-                          <div className="no-bookings">
-                            <Activity size={48} />
-                            <h4>No bookings found</h4>
-                            <p>No booking history available for this user.</p>
-                          </div>
-                        ) : (
-                          <div className="bookings-list">
-                            {userBookings.map((booking) => {
-                              const displayStatus = determineBookingStatus(booking);
-                              const bookingState = bookingStates[booking.id] || {};
-                              const verificationResult = verificationResults[booking.id];
-                              const isProcessingPayment = paymentProcessing[booking.id];
-                              
-                              const hasCheckedIn = booking.checkedIn || 
-                                booking.checkinVehicleNumber || 
-                                (bookingState && bookingState.zoneSelected);
-                              
-                              const hasCheckedOut = booking.checkedOut || 
-                                booking.checkoutVehicleNumber || 
-                                (verificationResult && verificationResult.checkoutVehicleNumber);
-
-                              const isLastCheckedIn = lastCheckedInBooking === booking.id;
-
-                              return (
-                                <div key={booking.id} className="booking-card">
-                                  <div className="booking-card-header">
-                                    <div className="booking-basic-info">
-                                      <h4>{booking.parkingLotName || 'Parking Lot'}</h4>
-                                      <div className="booking-meta">
-                                        <span className="booking-id">ID: {booking.bookingId || booking.id || 'N/A'}</span>
-                                        <span className={`booking-status ${getStatusClass(displayStatus)}`}>
-                                          {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="booking-details">
-                                    <div className="detail-section">
-                                      <h5>Location</h5>
-                                      <div className="detail-item">
-                                        <MapPin size={16} />
-                                        <span>{booking.location || booking.parkingLotLocation || 'Location not available'}</span>
-                                      </div>
-                                    </div>
-
-                                    <div className="detail-section">
-                                      <h5>Timing Details</h5>
-                                      <div className="detail-item">
-                                        <Clock size={16} />
-                                        <div className="time-details">
-                                          <div className="time-range">
-                                            <span>Start: {formatDateTime(booking.startTime)}</span>
-                                            <span>End: {formatDateTime(booking.endTime)}</span>
-                                          </div>
-                                          <div className="duration">
-                                            Duration: {getTimeDifference(booking.startTime, booking.endTime)}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    <div className="detail-section payment-details">
-                                      <div className="payment-info">
-                                        <h5>Payment Details</h5>
-                                        <div className="payment-amount">{booking.amount || booking.paymentAmount || '80'}</div>
-                                      </div>
-                                      <div className="payment-method">
-                                        {booking.paymentMethod ? 
-                                          `${booking.paymentMethod.charAt(0).toUpperCase() + booking.paymentMethod.slice(1)} Payment` : 
-                                          (booking.status === 'completed' ? 'Payment Completed' : 'Payment Pending')
-                                        }
-                                        {booking.paymentId && (
-                                          <div className="payment-id">
-                                            Transaction ID: {booking.paymentId.substring(0, 10)}...
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    <div className="detail-section">
-                                      <h5>Parking Space</h5>
-                                      <div className="space-info">
-                                        <div className="space-number">Space #{booking.spaceId || 'N/A'}</div>
-                                        
-                                        {(booking.vehicleType || (bookingState && bookingState.vehicleType)) && (
-                                          <div className="vehicle-type">
-                                            {getVehicleTypeIcon(booking.vehicleType || bookingState.vehicleType)}
-                                            <span>Type: {getVehicleTypeLabel(booking.vehicleType || bookingState.vehicleType)}</span>
-                                          </div>
-                                        )}
-                                        
-                                        {(booking.checkinVehicleNumber || (bookingState && bookingState.checkinVehicleNumber)) && (
-                                          <div className="vehicle-info">
-                                            Check-in Vehicle: {booking.checkinVehicleNumber || bookingState.checkinVehicleNumber}
-                                          </div>
-                                        )}
-                                        
-                                        {(booking.checkoutVehicleNumber || 
-                                          (bookingState && bookingState.checkoutVehicleNumber) ||
-                                          (verificationResult && verificationResult.checkoutVehicleNumber)) && (
-                                          <div className="vehicle-info">
-                                            Checkout Vehicle: {booking.checkoutVehicleNumber || 
-                                              bookingState.checkoutVehicleNumber || 
-                                              (verificationResult && verificationResult.checkoutVehicleNumber)}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {(booking.checkinImageData || (bookingState && bookingState.checkinImageData)) && (
-                                      <div className="image-preview-section">
-                                        <h5>Check-in Image</h5>
-                                        <div className="image-preview">
-                                          <img 
-                                            src={booking.checkinImageData || bookingState.checkinImageData} 
-                                            alt="Check-in Vehicle" 
-                                            className="captured-image"
-                                          />
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {(booking.checkoutImageData || 
-                                      (bookingState && bookingState.checkoutImageData) ||
-                                      (verificationResult && verificationResult.checkoutImageData)) && (
-                                      <div className="image-preview-section">
-                                        <h5>Checkout Image</h5>
-                                        <div className="image-preview">
-                                          <img 
-                                            src={booking.checkoutImageData || 
-                                              bookingState.checkoutImageData || 
-                                              (verificationResult && verificationResult.checkoutImageData)} 
-                                            alt="Checkout Vehicle" 
-                                            className="captured-image"
-                                          />
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {verificationResult && (
-                                      <div className={`verification-result ${verificationResult.isMatch ? 'verification-success' : 'verification-error'}`}>
-                                        {verificationResult.isMatch ? (
-                                          <div className="verification-success-content">
-                                            <CheckCircle size={24} />
-                                            <span>{verificationResult.message}</span>
-                                          </div>
-                                        ) : (
-                                          <div className="verification-error-content">
-                                            <AlertTriangle size={24} />
-                                            <span>{verificationResult.message}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-
-                                    {bookingState.webcamMode === 'zonepicker' && (
-                                      <div className="zone-selection">
-                                        <h5>Select Vehicle Zone</h5>
-                                        {bookingState.checkinImageData && (
-                                          <div className="vehicle-image-container">
-                                            <img 
-                                              src={bookingState.checkinImageData} 
-                                              alt="Vehicle" 
-                                              className="vehicle-image"
-                                            />
-                                          </div>
-                                        )}
-                                        <div className="zone-buttons">
-                                          <button 
-                                            className="zone-button zone-a"
-                                            onClick={() => selectZone(booking.id, 'A')}
-                                          >
-                                            <Bike size={20} />
-                                            <span>Zone A (Car)</span>
-                                          </button>
-                                          <button 
-                                            className="zone-button zone-b"
-                                            onClick={() => selectZone(booking.id, 'B')}
-                                          >
-                                            <Truck size={20} />
-                                            <span>Zone B (Car)</span>
-                                          </button>
-                                          <button 
-                                            className="zone-button zone-c"
-                                            onClick={() => selectZone(booking.id, 'C')}
-                                          >
-                                            <Car size={20} />
-                                            <span>Zone C (Car)</span>
-                                          </button>
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {bookingState.successMessage && !verificationResult && (
-                                      <div className="success-message-card">
-                                        {bookingState.successMessage}
-                                      </div>
-                                    )}
-
-                                    {bookingState.checkinError && (
-                                      <div className="error-message">
-                                        {bookingState.successMessage}
-                                      </div>
-                                    )}
-
-                                    {bookingState.checkoutError && (
-                                      <div className="error-message">
-                                        {bookingState.successMessage}
-                                      </div>
-                                    )}
-
-                                    <div className="status-indicators">
-                                      {isLastCheckedIn && (
-                                        <div className="status-tag check-in-status">
-                                          <CheckCircle size={14} />
-                                          <span>Last Checked-in Booking</span>
-                                        </div>
-                                      )}
-                                      
-                                      <div className="status-tag firebase-status">
-                                        <Activity size={14} />
-                                        <span>Firebase Status: {previousStatus}</span>
-                                      </div>
-                                      
-                                      <div className="status-tag action-status">
-                                        {processingAction ? (
-                                          <>
-                                            <Activity size={14} className="spinning" />
-                                            <span>Processing...</span>
-                                          </>
-                                        ) : previousStatus === 0 ? (
-                                          <>
-                                            <Clock size={14} />
-                                            <span>Waiting for Firebase trigger (Status=1)</span>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <CheckCircle size={14} />
-                                            <span>Firebase triggered (Status=1)</span>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {displayStatus === 'active' && 
-                                     !hasCheckedIn && 
-                                     !bookingState.webcamActive && 
-                                     !isProcessingPayment && (
-                                      <div className="status-pending">
-                                        <Activity size={16} />
-                                        <span>Waiting for automatic check-in...</span>
-                                      </div>
-                                    )}
-                                    
-                                    {displayStatus === 'active' && 
-                                     hasCheckedIn && 
-                                     !hasCheckedOut && 
-                                     !bookingState.webcamActive && 
-                                     !isProcessingPayment && 
-                                     isLastCheckedIn && (
-                                      <div className="status-pending">
-                                        <Activity size={16} />
-                                        <span>Waiting for automatic check-out...</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="no-activity">
-                  <p>No recent activity to display</p>
+              {camera.hasSimulation && simulationProgress && (
+                <div style={{ fontSize: '0.9rem', marginTop: '10px', color: '#f59e0b', fontWeight: 'bold' }}>
+                  🎬 {simulationProgress.message}
                 </div>
               )}
             </div>
           </div>
-        </>
+        ) : camera.error || camera.needsPermission ? (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#1f2937',
+            color: 'white',
+            flexDirection: 'column',
+            padding: '30px',
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            {/* Video element still available for retry */}
+            <video 
+              ref={el => {
+                if (el) {
+                  console.log(`📹 Creating video ref for booking ${bookingId} during error`);
+                  videoRefs.current[bookingId] = el;
+                  el.playsInline = true;
+                  el.muted = true;
+                  el.controls = false;
+                }
+              }}
+              playsInline
+              muted
+              autoPlay
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                zIndex: 1
+              }}
+            />
+            
+            <div style={{ 
+              position: 'relative', 
+              zIndex: 10,
+              backgroundColor: 'rgba(31, 41, 55, 0.9)',
+              padding: '20px',
+              borderRadius: '8px'
+            }}>
+              <AlertCircle size={48} style={{ 
+                marginBottom: '15px',
+                color: '#f59e0b'
+              }} />
+              <div style={{ fontSize: '1.1rem', marginBottom: '15px', fontWeight: 'bold' }}>
+                {camera.needsPermission ? 'Camera Permission Required' : 'Camera Error'}
+              </div>
+              <div style={{ fontSize: '0.9rem', color: '#d1d5db', marginBottom: '15px' }}>
+                {camera.needsPermission ? 
+                  'Please allow camera access in your browser and click "Enable Camera" below.' :
+                  camera.error
+                }
+              </div>
+              <div style={{ fontSize: '0.9rem', marginBottom: '15px', color: '#10b981', fontWeight: 'bold' }}>
+                Timer: {formatRemainingTime(remainingTime)} remaining
+              </div>
+              {camera.hasSimulation && simulationProgress && (
+                <div style={{ fontSize: '0.9rem', marginBottom: '15px', color: '#f59e0b', fontWeight: 'bold' }}>
+                  🎬 {simulationProgress.message}
+                </div>
+              )}
+              
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <button
+                  onClick={() => handleStartCheckin(bookingId)}
+                  style={{
+                    padding: '12px 24px',
+                    background: '#4f46e5',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Camera size={20} />
+                  {camera.needsPermission ? 'Enable Camera' : 'Retry Camera'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : camera.needsUserInteraction || camera.streamLoaded ? (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            position: 'relative'
+          }}>
+            {/* Video element - should show stream */}
+            <video 
+              ref={el => {
+                if (el) {
+                  console.log(`📹 Creating video ref for booking ${bookingId} - needs interaction`);
+                  videoRefs.current[bookingId] = el;
+                  el.playsInline = true;
+                  el.muted = true;
+                  el.controls = false;
+                }
+              }}
+              playsInline
+              muted
+              onClick={() => handleVideoClick(bookingId)}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                backgroundColor: '#000',
+                cursor: 'pointer'
+              }}
+            />
+            
+            {/* Play button overlay */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 10,
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              padding: '20px',
+              borderRadius: '50%',
+              cursor: 'pointer'
+            }}
+            onClick={() => handleVideoClick(bookingId)}
+            >
+              <Play size={40} color="white" />
+            </div>
+            
+            {/* Timer overlay */}
+            <div style={{
+              position: 'absolute',
+              top: '15px',
+              left: '15px',
+              background: 'rgba(239, 68, 68, 0.95)',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontSize: '0.9rem',
+              fontWeight: 'bold',
+              zIndex: 5
+            }}>
+              READY • {formatRemainingTime(remainingTime)}
+            </div>
+            
+            {/* Simulation overlay */}
+            {camera.hasSimulation && simulationProgress && (
+              <div style={{
+                position: 'absolute',
+                top: '70px',
+                left: '15px',
+                right: '15px',
+                background: 'rgba(245, 158, 11, 0.95)',
+                color: 'white',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                zIndex: 5
+              }}>
+                🎬 SIMULATION: {simulationProgress.message}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            position: 'relative'
+          }}>
+            {/* MAIN VIDEO ELEMENT - LIVE FEED */}
+            <video 
+              ref={el => {
+                if (el) {
+                  console.log(`📹 Creating LIVE video ref for booking ${bookingId}`);
+                  videoRefs.current[bookingId] = el;
+                  
+                  // Ensure video properties are set correctly
+                  el.playsInline = true;
+                  el.muted = true;
+                  el.controls = false;
+                  el.autoplay = true;
+                  
+                  // Debug video element
+                  el.addEventListener('loadstart', () => console.log('📹 Video loadstart'));
+                  el.addEventListener('loadedmetadata', () => console.log('📹 Video metadata loaded'));
+                  el.addEventListener('canplay', () => console.log('📹 Video can play'));
+                  el.addEventListener('playing', () => console.log('📹 Video is playing'));
+                  el.addEventListener('error', (e) => console.error('📹 Video error:', e));
+                }
+              }}
+              playsInline
+              muted
+              autoPlay
+              onClick={() => handleVideoClick(bookingId)}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                backgroundColor: '#000',
+                display: 'block',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                zIndex: 1
+              }}
+            />
+            
+            {/* LIVE indicator with timer */}
+            {camera.videoReady && (
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                left: '15px',
+                background: 'rgba(239, 68, 68, 0.95)',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                zIndex: 10
+              }}>
+                <div style={{
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  background: 'white',
+                  marginRight: '8px',
+                  animation: 'pulse 1s infinite'
+                }} />
+                LIVE • {formatRemainingTime(remainingTime)}
+              </div>
+            )}
+            
+            {/* Simulation status overlay */}
+            {camera.hasSimulation && simulationProgress && camera.videoReady && (
+              <div style={{
+                position: 'absolute',
+                top: '70px',
+                left: '15px',
+                right: '15px',
+                background: 'rgba(245, 158, 11, 0.95)',
+                color: 'white',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                zIndex: 10
+              }}>
+                🎬 SIMULATION: {simulationProgress.message}
+              </div>
+            )}
+            
+            {/* Detection status overlay */}
+            {camera.videoReady && (
+              <div style={{
+                position: 'absolute',
+                bottom: '15px',
+                left: '15px',
+                right: '15px',
+                background: 'rgba(0, 0, 0, 0.85)',
+                color: 'white',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                fontSize: '0.95rem',
+                textAlign: 'center',
+                fontWeight: '500',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                zIndex: 10
+              }}>
+                {camera.simulatingCheckin ? 
+                  '🎬 SIMULATING CHECK-IN...' :
+                  camera.simulatingCheckout ?
+                  '🎬 SIMULATING CHECKOUT...' :
+                  camera.mode === 'checkin' ? 
+                    '🔍 Scanning for authorized vehicle plates...' :
+                    `🚗 Waiting for vehicle: ${detectedPlates[bookingId]?.plateNumber || 'Unknown'}`
+                }
+              </div>
+            )}
+            
+            {/* Controls overlay */}
+            <div style={{
+              position: 'absolute',
+              top: '15px',
+              right: '15px',
+              display: 'flex',
+              gap: '8px',
+              zIndex: 10
+            }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStopCamera(bookingId);
+                }}
+                style={{
+                  background: 'rgba(220, 38, 38, 0.9)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold'
+                }}
+              >
+                <StopCircle size={16} style={{ marginRight: '4px' }} />
+                Stop
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Hidden canvas for image capture */}
+        <canvas 
+          ref={el => {
+            if (el) {
+              canvasRefs.current[bookingId] = el;
+            }
+          }}
+          style={{ display: 'none' }} 
+        />
+      </div>
+    );
+  };
+
+  // Vehicle type icons
+  const getVehicleIcon = (type) => {
+    switch(type) {
+      case 1:
+        return <Bike size={18} style={{ marginRight: '4px' }} />;
+      case 2:
+        return <Car size={18} style={{ marginRight: '4px' }} />;
+      case 3:
+        return <Truck size={18} style={{ marginRight: '4px' }} />;
+      default:
+        return <Car size={18} style={{ marginRight: '4px' }} />;
+    }
+  };
+
+  return (
+    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '30px' }}>
+        <button 
+          onClick={onBack}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            background: 'none', 
+            border: 'none', 
+            cursor: 'pointer',
+            color: '#4f46e5',
+            marginRight: '20px',
+            fontSize: '1rem'
+          }}
+        >
+          <ArrowLeft size={20} />
+          <span style={{ marginLeft: '8px' }}>Back to Dashboard</span>
+        </button>
+        <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: '2rem' }}>
+          <Users size={28} style={{ marginRight: '12px' }} />
+          Live Camera Monitoring System
+        </h1>
+      </div>
+
+      {/* Enhanced Simulation Info */}
+      <div style={{ 
+        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', 
+        borderRadius: '16px', 
+        padding: '30px', 
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)', 
+        marginBottom: '30px',
+        border: '2px solid #0ea5e9'
+      }}>
+        <h2 style={{ margin: '0 0 20px 0', fontSize: '1.8rem', color: '#0c4a6e' }}>🎬 Live Camera Simulation System</h2>
+        <p style={{ margin: '0 0 20px 0', color: '#0c4a6e', fontSize: '1.1rem' }}>
+          Real-time camera streaming
+        </p>
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '20px' }}>
+          
+          <div style={{
+            background: '#dcfce7',
+            color: '#047857',
+            padding: '12px 20px',
+            borderRadius: '12px',
+            fontWeight: 'bold',
+            fontSize: '1rem',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+          }}>
+            ✅ Live Video Feed + Completion
+          </div>
+        </div>
+        <div style={{ 
+          background: 'rgba(255,255,255,0.8)', 
+          padding: '15px', 
+          borderRadius: '12px',
+          fontSize: '1rem',
+          color: '#0c4a6e'
+        }}>
+          📹 <strong>Live Camera Features:</strong> Real-time video streaming, automatic plate detection simulation, 5-minute persistent monitoring, interactive controls
+        </div>
+      </div>
+
+      {/* Status Messages */}
+      {statusMessage && (
+        <div style={{ 
+          margin: '0 0 20px 0', 
+          padding: '15px 20px', 
+          backgroundColor: statusMessage.includes('❌') ? '#fee2e2' : '#ecfdf5', 
+          borderRadius: '12px', 
+          borderLeft: statusMessage.includes('❌') ? '4px solid #dc2626' : '4px solid #10b981',
+          display: 'flex',
+          alignItems: 'center',
+          fontSize: '1rem'
+        }}>
+          {statusMessage.includes('❌') ? 
+            <XCircle size={20} style={{ marginRight: '12px', color: '#dc2626' }} /> :
+            <CheckCircle size={20} style={{ marginRight: '12px', color: '#10b981' }} />
+          }
+          <span style={{ 
+            color: statusMessage.includes('❌') ? '#b91c1c' : '#065f46', 
+            fontWeight: 600 
+          }}>
+            {statusMessage}
+          </span>
+        </div>
       )}
+
+      {/* Main Content */}
+      <div style={{ 
+        background: 'white', 
+        borderRadius: '16px', 
+        padding: '30px', 
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)', 
+        marginBottom: '30px' 
+      }}>
+        <h2 style={{ margin: '0 0 25px 0', fontSize: '1.8rem' }}>Parking Activity Monitor</h2>
+        
+        <div>
+          {recentActivity.length > 0 ? (
+            recentActivity.map((activity) => (
+              <div key={activity.id} style={{ marginBottom: '20px' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  padding: '20px',
+                  borderRadius: '12px',
+                  border: '2px solid #e5e7eb',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)'
+                }}
+                onClick={() => setExpandedActivity(expandedActivity === activity.id ? null : activity.id)}
+                >
+                  <div style={{ 
+                    width: '50px', 
+                    height: '50px', 
+                    borderRadius: '50%', 
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', 
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: '20px',
+                    fontSize: '1.5rem',
+                    fontWeight: 'bold'
+                  }}>
+                    {activity.user ? activity.user.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '1.1rem' }}>
+                      <span style={{ fontWeight: 'bold' }}>{activity.user}</span> {activity.action}
+                    </p>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#6b7280' }}>{activity.time}</p>
+                  </div>
+                  <ChevronRight 
+                    size={20} 
+                    style={{ 
+                      transform: expandedActivity === activity.id ? 'rotate(90deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.3s'
+                    }} 
+                  />
+                </div>
+
+                {/* Show expanded view for selected activity */}
+                {expandedActivity === activity.id && (
+                  <div style={{ 
+                    padding: '30px', 
+                    border: '2px solid #e5e7eb',
+                    borderTop: 'none',
+                    borderBottomLeftRadius: '12px',
+                    borderBottomRightRadius: '12px',
+                    background: '#f9fafb'
+                  }}>
+                    <h3 style={{ marginTop: 0, fontSize: '1.5rem' }}>{activity.user}'s Live Monitoring</h3>
+                    
+                    <div>
+                      {userBookings[activity.id] && userBookings[activity.id].map((booking) => {
+                        const displayStatus = determineBookingStatus(booking);
+                        const cameraActive = activeCameras[booking.id]?.active;
+                        const detectedPlate = detectedPlates[booking.id];
+                        const remainingTime = getRemainingTime(booking.id);
+                        const isCompleted = displayStatus === 'completed' && detectedPlate?.isSimulated;
+
+                        return (
+                          <div key={booking.id} style={{ 
+                            background: 'white', 
+                            borderRadius: '16px', 
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.1)', 
+                            marginBottom: '20px',
+                            overflow: 'hidden',
+                            border: '2px solid #e5e7eb'
+                          }}>
+                            <div style={{ 
+                              padding: '25px', 
+                              borderBottom: '2px solid #e5e7eb'
+                            }}>
+                              <div>
+                                <h4 style={{ margin: '0 0 10px 0', fontSize: '1.3rem' }}>{booking.parkingLotName || 'Parking Lot'}</h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                    <span style={{ fontSize: '1rem', color: '#6b7280' }}>ID: {booking.bookingId || booking.id || 'N/A'}</span>
+                                    <span style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      fontSize: '0.9rem', 
+                                      color: '#6b7280',
+                                      background: '#f3f4f6',
+                                      padding: '4px 12px',
+                                      borderRadius: '999px'
+                                    }}>
+                                      {getVehicleIcon(booking.vehicleType)}
+                                      {booking.vehicleType === 1 ? 'Bike' : 
+                                       booking.vehicleType === 2 ? 'Car' : 
+                                       booking.vehicleType === 3 ? 'Truck' : 'Vehicle'}
+                                    </span>
+                                  </div>
+                                  <span style={{ 
+                                    padding: '6px 16px', 
+                                    borderRadius: '999px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 'bold',
+                                    background: 
+                                      displayStatus === 'active' ? '#dbeafe' : 
+                                      displayStatus === 'completed' ? '#d1fae5' : '#f3f4f6',
+                                    color: 
+                                      displayStatus === 'active' ? '#1e40af' : 
+                                      displayStatus === 'completed' ? '#047857' : '#374151'
+                                  }}>
+                                    {displayStatus === 'completed' && detectedPlate?.isSimulated ? 
+                                      '🎬 Simulation Completed' : 
+                                      displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)
+                                    }
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Location and timing details */}
+                              <div style={{ 
+                                marginTop: '15px',
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: '15px',
+                                fontSize: '0.9rem'
+                              }}>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center',
+                                  color: '#4b5563'
+                                }}>
+                                  <MapPin size={16} style={{ marginRight: '6px', color: '#6b7280' }} />
+                                  {booking.location || 'Location not available'}
+                                </div>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center',
+                                  color: '#4b5563'
+                                }}>
+                                  <Clock size={16} style={{ marginRight: '6px', color: '#6b7280' }} />
+                                  {booking.startTime ? formatDateTime(booking.startTime) : 'Time not available'}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ padding: '25px' }}>
+                              {/* Simulation Status Display */}
+                              {detectedPlate?.isSimulated && (
+                                <div style={{ marginBottom: '25px' }}>
+                                  <h5 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#6b7280' }}>🎬 Simulation Results</h5>
+                                  <div style={{ 
+                                    background: displayStatus === 'completed' ? '#dcfce7' : '#fef3c7',
+                                    padding: '20px',
+                                    borderRadius: '12px',
+                                    border: displayStatus === 'completed' ? '2px solid #10b981' : '2px solid #f59e0b'
+                                  }}>
+                                    {detectedPlate?.checkinTime && (
+                                      <div style={{ fontSize: '1rem', marginBottom: '10px', color: displayStatus === 'completed' ? '#047857' : '#92400e' }}>
+                                        ✅ <strong>Check-in:</strong> {detectedPlate.checkinTime.toLocaleTimeString()} - KA19EQ1316
+                                      </div>
+                                    )}
+                                    {detectedPlate?.checkoutTime && (
+                                      <div style={{ fontSize: '1rem', marginBottom: '10px', color: '#047857' }}>
+                                        ✅ <strong>Checkout:</strong> {detectedPlate.checkoutTime.toLocaleTimeString()} - KA19EQ1316
+                                      </div>
+                                    )}
+                                    {displayStatus === 'completed' && (
+                                      <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#047857' }}>
+                                        🎉 <strong>LIVE SIMULATION COMPLETED SUCCESSFULLY!</strong>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Camera Debug Info (for testing) */}
+                              {cameraActive && (
+                                <div style={{ 
+                                  marginBottom: '20px',
+                                  background: '#f8fafc',
+                                  padding: '15px',
+                                  borderRadius: '8px',
+                                  border: '1px solid #e2e8f0',
+                                  fontSize: '0.85rem'
+                                }}>
+                                  <h6 style={{ margin: '0 0 10px 0', color: '#475569' }}>Camera Debug Info:</h6>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', color: '#64748b' }}>
+                                    <div>Status: {activeCameras[booking.id]?.videoReady ? '✅ Ready' : '⏳ Loading'}</div>
+                                    <div>Stream: {activeCameras[booking.id]?.streamActive ? '✅ Active' : '❌ Inactive'}</div>
+                                    <div>Mode: {activeCameras[booking.id]?.mode}</div>
+                                    <div>Playing: {activeCameras[booking.id]?.playing ? '✅ Yes' : '❌ No'}</div>
+                                    <div>Error: {activeCameras[booking.id]?.error ? '❌ Yes' : '✅ None'}</div>
+                                    <div>Timer: {formatRemainingTime(remainingTime)}</div>
+                                  </div>
+                                  {activeCameras[booking.id]?.error && (
+                                    <div style={{ marginTop: '8px', padding: '8px', background: '#fee2e2', borderRadius: '4px', color: '#dc2626' }}>
+                                      Error: {activeCameras[booking.id].error}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Live Camera Feed */}
+                              {cameraActive && (
+                                <div style={{ 
+                                  marginBottom: '25px',
+                                  background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                                  padding: '25px',
+                                  borderRadius: '16px',
+                                  border: '2px solid #10b981'
+                                }}>
+                                  <h5 style={{ 
+                                    margin: '0 0 20px 0', 
+                                    display: 'flex', 
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    fontSize: '1.2rem'
+                                  }}>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                      <Video size={24} style={{ marginRight: '12px', color: '#10b981' }} />
+                                      <span style={{ color: '#10b981', fontWeight: 'bold' }}>
+                                        🔴 LIVE CAMERA MONITORING
+                                      </span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                      <div style={{
+                                        padding: '8px 16px',
+                                        background: '#10b981',
+                                        color: 'white',
+                                        borderRadius: '8px',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 'bold'
+                                      }}>
+                                        ⏱️ {formatRemainingTime(remainingTime)}
+                                      </div>
+                                    </div>
+                                  </h5>
+                                  
+                                  <div style={{ 
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center'
+                                  }}>
+                                    {renderVideoElement(booking.id)}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Start Button and Camera Info - Only show if not completed */}
+                              {displayStatus === 'active' && 
+                               !cameraActive && 
+                               !isCompleted && (
+                                <div style={{ textAlign: 'center' }}>
+                                  {/* Camera Permission Check */}
+                                  <div style={{ 
+                                    marginBottom: '20px',
+                                    padding: '15px',
+                                    background: '#f0f9ff',
+                                    borderRadius: '8px',
+                                    border: '1px solid #0ea5e9'
+                                  }}>
+                                    <h6 style={{ margin: '0 0 10px 0', color: '#0c4a6e' }}>📹 Camera Requirements:</h6>
+                                    <ul style={{ margin: '0', paddingLeft: '20px', color: '#0c4a6e', textAlign: 'left' }}>
+                                      <li>Allow camera permissions when prompted</li>
+                                      <li>Ensure no other apps are using your camera</li>
+                                      <li>Use a supported browser (Chrome, Firefox, Safari)</li>
+                                      <li>Enable HTTPS for camera access</li>
+                                    </ul>
+                                  </div>
+                                  
+                                  <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                    <button
+                                      onClick={() => handleStartCheckin(booking.id)}
+                                      style={{
+                                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '16px 32px',
+                                        borderRadius: '12px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        fontWeight: 'bold',
+                                        fontSize: '1.1rem',
+                                        boxShadow: '0 8px 16px rgba(16, 185, 129, 0.3)'
+                                      }}
+                                    >
+                                      <Video size={20} style={{ marginRight: '12px' }} />
+                                      Start Live Camera Monitoring
+                                    </button>
+                                    
+                                    <button
+                                      onClick={async () => {
+                                        const permission = await checkCameraPermissions();
+                                        alert(`Camera permission status: ${permission}`);
+                                      }}
+                                      style={{
+                                        background: '#f3f4f6',
+                                        color: '#374151',
+                                        border: '1px solid #d1d5db',
+                                        padding: '16px 24px',
+                                        borderRadius: '12px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        fontWeight: 'bold',
+                                        fontSize: '0.9rem'
+                                      }}
+                                    >
+                                      <Camera size={18} style={{ marginRight: '8px' }} />
+                                      Check Camera Access
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Completion Message */}
+                              {isCompleted && (
+                                <div style={{
+                                  padding: '25px',
+                                  background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                                  border: '3px solid #10b981',
+                                  borderRadius: '16px',
+                                  textAlign: 'center'
+                                }}>
+                                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#047857', marginBottom: '10px' }}>
+                                    🎉 Live Camera Simulation Successfully Completed!
+                                  </div>
+                                  <div style={{ fontSize: '1.1rem', color: '#065f46' }}>
+                                    Vehicle KA19EQ1316 completed full check-in and checkout cycle with live camera monitoring
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '40px 20px',
+              color: '#6b7280'
+            }}>
+              <Activity size={48} style={{ marginBottom: '16px' }} />
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem' }}>No Recent Activity</h3>
+              <p style={{ margin: 0, fontSize: '1rem' }}>
+                No parking activities found. Activities will appear here when users book parking spots.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
       
+      {/* Enhanced CSS animations */}
       <style jsx>{`
-        .connection-status {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-        
-        .firebase-status-indicator {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          background-color: #f0f4f8;
-          padding: 4px 10px;
-          border-radius: 16px;
-          font-size: 14px;
-          border: none;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-        
-        .firebase-status-indicator:hover {
-          background-color: #e6edf5;
-        }
-        
-        .firebase-status-indicator.status-active {
-          background-color: #e6f7ee;
-          color: #0d8a42;
-        }
-        
-        .processing-badge {
-          background-color: #f59e0b;
-          color: white;
-          font-size: 11px;
-          padding: 2px 6px;
-          border-radius: 10px;
-          margin-left: 6px;
-        }
-        
-        .status-tag {
-          display: flex;
-          align-items: center;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          margin-right: 8px;
-          margin-bottom: 4px;
-          background-color: #f5f5f5;
-          color: #333;
-        }
-        
-        .status-indicators {
-          display: flex;
-          flex-wrap: wrap;
-          margin-top: 12px;
-          margin-bottom: 8px;
-        }
-        
-        .check-in-status {
-          background-color: #e6f7ee;
-          color: #0d8a42;
-        }
-        
-        .firebase-status {
-          background-color: #e6f0f7;
-          color: #2a7ab9;
-        }
-        
-        .action-status {
-          background-color: #f9f2e8;
-          color: #b95a2a;
-        }
-        
-        .spinning {
-          animation: spin 1.5s linear infinite;
-        }
-        
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
         
-        .status-pending {
-          display: flex;
-          align-items: center;
-          margin-top: 12px;
-          padding: 10px;
-          background-color: #f5f7f9;
-          border-radius: 6px;
-          border-left: 3px solid #3b82f6;
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
         }
         
-        .status-pending svg {
-          margin-right: 8px;
-          color: #3b82f6;
+        .loading-spinner {
+          animation: spin 1s linear infinite;
         }
         
-        .status-pending span {
-          font-size: 14px;
-          color: #4b5563;
+        button:hover {
+          transform: translateY(-2px);
+          transition: all 0.2s ease;
         }
       `}</style>
     </div>
