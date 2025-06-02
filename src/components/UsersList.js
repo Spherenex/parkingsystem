@@ -1,8 +1,6 @@
 
 
 
-
-
 // import React, { useState, useEffect, useRef, useCallback } from 'react';
 // import { 
 //   Users, ArrowLeft, Clock, MapPin, Activity, ChevronRight, 
@@ -26,12 +24,38 @@
 //       status: 'active',
 //       vehicleType: 2,
 //       bookingId: 'BP001'
+//     },
+//     {
+//       id: 'booking_002',
+//       parkingLotName: 'Central Business District',
+//       spaceId: '5',
+//       userId: 'user_002',
+//       location: 'MG Road, CBD Area',
+//       startTime: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+//       endTime: new Date(Date.now() + 3 * 60 * 60 * 1000), // 3 hours from now
+//       amount: 120,
+//       status: 'active',
+//       vehicleType: 1,
+//       bookingId: 'BP002'
+//     },
+//     {
+//       id: 'booking_003',
+//       parkingLotName: 'Indiranagar Metro',
+//       spaceId: '12',
+//       userId: 'user_003',
+//       location: 'Near Indiranagar Metro Station',
+//       startTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+//       endTime: new Date(Date.now() + 1 * 60 * 60 * 1000), // 1 hour from now
+//       amount: 60,
+//       status: 'active',
+//       vehicleType: 3,
+//       bookingId: 'BP003'
 //     }
 //   ]);
 //   const [loading, setLoading] = useState(false);
 //   const [error, setError] = useState('');
 //   const [expandedActivity, setExpandedActivity] = useState(null);
-//   const [userBookings, setUserBookings] = useState([]);
+//   const [userBookings, setUserBookings] = useState({});
 //   const [activityError, setActivityError] = useState(null);
 //   const [loadingBookings, setLoadingBookings] = useState(false);
 //   const [connectionStatus, setConnectionStatus] = useState(0);
@@ -66,7 +90,8 @@
 //     'KA-01-HB-1234',
 //     'KA-05-MN-5678', 
 //     'KA-02-CD-9012',
-//     'KA19EQ1316' // Hardcoded simulation plate
+//     'KA05MS8874'
+//     // 'KA19EQ1316' // Hardcoded simulation plate
 //   ];
 
 //   const allSimulatedPlates = [
@@ -77,12 +102,46 @@
 //     'MH-12-CD-7890'
 //   ];
 
-//   // Initialize with sample data
+//   // Initialize with booking data mapped to activities based on activity details
 //   useEffect(() => {
-//     setUserBookings(allBookings);
+//     // Create a mapping of user bookings based on activity information
+//     const bookingsMap = {};
+    
+//     // Populate bookings for each activity with matching location and space info
+//     recentActivity.forEach((activity) => {
+//       // Parse the activity action text to extract location and space info
+//       // Example format: "completed payment for Space #3" or "booked Space #1 at Kengeri Bus Terminal"
+//       const spaceMatch = activity.action?.match(/Space #(\d+)/i);
+//       const spaceNumber = spaceMatch ? spaceMatch[1] : '1';
+      
+//       let locationName = '';
+//       if (activity.action?.includes('at ')) {
+//         const locationMatch = activity.action.match(/at\s+([^,]+)(?:,|$)/i);
+//         locationName = locationMatch ? locationMatch[1].trim() : '';
+//       }
+      
+//       // Create a booking that matches the activity description
+//       const customBooking = {
+//         id: `booking_${activity.id}`,
+//         parkingLotName: locationName || 'Parking Lot',
+//         spaceId: spaceNumber,
+//         userId: activity.user ? `user_${activity.user.toLowerCase()}` : 'user_001',
+//         location: locationName ? `${locationName}, Bengaluru` : 'Bengaluru, Karnataka',
+//         startTime: new Date(activity.time || Date.now()),
+//         endTime: new Date(Date.now() + 4 * 60 * 60 * 1000),
+//         amount: 80,
+//         status: 'active',
+//         vehicleType: Math.floor(Math.random() * 3) + 1, // Random vehicle type
+//         bookingId: `BP${activity.id.toString().padStart(3, '0')}`
+//       };
+      
+//       bookingsMap[activity.id] = [customBooking];
+//     });
+    
+//     setUserBookings(bookingsMap);
 //     setLoading(false);
 //     setLoadingBookings(false);
-//   }, []);
+//   }, [recentActivity]);
 
 //   // Helper functions
 //   const formatDateTime = (date) => {
@@ -193,7 +252,7 @@
 
 //   // Simulation functions
 //   const simulateCheckin = useCallback(async (bookingId) => {
-//     const hardcodedPlate = 'KA19EQ1316';
+//     const hardcodedPlate = 'KA05MS8874';
     
 //     console.log(`🎬 SIMULATION: Starting check-in for booking ${bookingId}`);
     
@@ -246,7 +305,7 @@
 //   }, [captureImageFromVideo]);
 
 //   const simulateCheckout = useCallback(async (bookingId) => {
-//     const hardcodedPlate = 'KA19EQ1316';
+//     const hardcodedPlate = 'KA05MS8874';
     
 //     console.log(`🎬 SIMULATION: Starting checkout for booking ${bookingId}`);
     
@@ -1165,6 +1224,20 @@
 //     );
 //   };
 
+//   // Vehicle type icons
+//   const getVehicleIcon = (type) => {
+//     switch(type) {
+//       case 1:
+//         return <Bike size={18} style={{ marginRight: '4px' }} />;
+//       case 2:
+//         return <Car size={18} style={{ marginRight: '4px' }} />;
+//       case 3:
+//         return <Truck size={18} style={{ marginRight: '4px' }} />;
+//       default:
+//         return <Car size={18} style={{ marginRight: '4px' }} />;
+//     }
+//   };
+
 //   return (
 //     <div style={{ fontFamily: 'Inter, system-ui, sans-serif', padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
 //       {/* Header */}
@@ -1323,7 +1396,7 @@
 //                     <h3 style={{ marginTop: 0, fontSize: '1.5rem' }}>{activity.user}'s Live Monitoring</h3>
                     
 //                     <div>
-//                       {userBookings.map((booking) => {
+//                       {userBookings[activity.id] && userBookings[activity.id].map((booking) => {
 //                         const displayStatus = determineBookingStatus(booking);
 //                         const cameraActive = activeCameras[booking.id]?.active;
 //                         const detectedPlate = detectedPlates[booking.id];
@@ -1346,7 +1419,23 @@
 //                               <div>
 //                                 <h4 style={{ margin: '0 0 10px 0', fontSize: '1.3rem' }}>{booking.parkingLotName || 'Parking Lot'}</h4>
 //                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-//                                   <span style={{ fontSize: '1rem', color: '#6b7280' }}>ID: {booking.bookingId || booking.id || 'N/A'}</span>
+//                                   <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+//                                     <span style={{ fontSize: '1rem', color: '#6b7280' }}>ID: {booking.bookingId || booking.id || 'N/A'}</span>
+//                                     <span style={{ 
+//                                       display: 'flex', 
+//                                       alignItems: 'center', 
+//                                       fontSize: '0.9rem', 
+//                                       color: '#6b7280',
+//                                       background: '#f3f4f6',
+//                                       padding: '4px 12px',
+//                                       borderRadius: '999px'
+//                                     }}>
+//                                       {getVehicleIcon(booking.vehicleType)}
+//                                       {booking.vehicleType === 1 ? 'Bike' : 
+//                                        booking.vehicleType === 2 ? 'Car' : 
+//                                        booking.vehicleType === 3 ? 'Truck' : 'Vehicle'}
+//                                     </span>
+//                                   </div>
 //                                   <span style={{ 
 //                                     padding: '6px 16px', 
 //                                     borderRadius: '999px',
@@ -1366,6 +1455,32 @@
 //                                   </span>
 //                                 </div>
 //                               </div>
+                              
+//                               {/* Location and timing details */}
+//                               <div style={{ 
+//                                 marginTop: '15px',
+//                                 display: 'flex',
+//                                 flexWrap: 'wrap',
+//                                 gap: '15px',
+//                                 fontSize: '0.9rem'
+//                               }}>
+//                                 <div style={{ 
+//                                   display: 'flex', 
+//                                   alignItems: 'center',
+//                                   color: '#4b5563'
+//                                 }}>
+//                                   <MapPin size={16} style={{ marginRight: '6px', color: '#6b7280' }} />
+//                                   {booking.location || 'Location not available'}
+//                                 </div>
+//                                 <div style={{ 
+//                                   display: 'flex', 
+//                                   alignItems: 'center',
+//                                   color: '#4b5563'
+//                                 }}>
+//                                   <Clock size={16} style={{ marginRight: '6px', color: '#6b7280' }} />
+//                                   {booking.startTime ? formatDateTime(booking.startTime) : 'Time not available'}
+//                                 </div>
+//                               </div>
 //                             </div>
 
 //                             <div style={{ padding: '25px' }}>
@@ -1381,12 +1496,12 @@
 //                                   }}>
 //                                     {detectedPlate?.checkinTime && (
 //                                       <div style={{ fontSize: '1rem', marginBottom: '10px', color: displayStatus === 'completed' ? '#047857' : '#92400e' }}>
-//                                         ✅ <strong>Check-in:</strong> {detectedPlate.checkinTime.toLocaleTimeString()} - KA19EQ1316
+//                                         ✅ <strong>Check-in:</strong> {detectedPlate.checkinTime.toLocaleTimeString()} - KA05MS8874
 //                                       </div>
 //                                     )}
 //                                     {detectedPlate?.checkoutTime && (
 //                                       <div style={{ fontSize: '1rem', marginBottom: '10px', color: '#047857' }}>
-//                                         ✅ <strong>Checkout:</strong> {detectedPlate.checkoutTime.toLocaleTimeString()} - KA19EQ1316
+//                                         ✅ <strong>Checkout:</strong> {detectedPlate.checkoutTime.toLocaleTimeString()} - KA05MS8874
 //                                       </div>
 //                                     )}
 //                                     {displayStatus === 'completed' && (
@@ -1552,7 +1667,7 @@
 //                                     🎉 Live Camera Simulation Successfully Completed!
 //                                   </div>
 //                                   <div style={{ fontSize: '1.1rem', color: '#065f46' }}>
-//                                     Vehicle KA19EQ1316 completed full check-in and checkout cycle with live camera monitoring
+//                                     Vehicle KA05MS8874 completed full check-in and checkout cycle with live camera monitoring
 //                                   </div>
 //                                 </div>
 //                               )}
@@ -1607,6 +1722,12 @@
 // };
 
 // export default UsersList;
+
+
+
+
+
+
 
 
 
@@ -1700,7 +1821,8 @@ const UsersList = ({ onBack, recentActivity = [] }) => {
     'KA-01-HB-1234',
     'KA-05-MN-5678', 
     'KA-02-CD-9012',
-    'KA19EQ1316' // Hardcoded simulation plate
+    'KA05MS8874'
+    // 'KA19EQ1316' // Hardcoded simulation plate
   ];
 
   const allSimulatedPlates = [
@@ -1861,7 +1983,7 @@ const UsersList = ({ onBack, recentActivity = [] }) => {
 
   // Simulation functions
   const simulateCheckin = useCallback(async (bookingId) => {
-    const hardcodedPlate = 'KA19EQ1316';
+    const hardcodedPlate = 'KA05MS8874';
     
     console.log(`🎬 SIMULATION: Starting check-in for booking ${bookingId}`);
     
@@ -1914,7 +2036,7 @@ const UsersList = ({ onBack, recentActivity = [] }) => {
   }, [captureImageFromVideo]);
 
   const simulateCheckout = useCallback(async (bookingId) => {
-    const hardcodedPlate = 'KA19EQ1316';
+    const hardcodedPlate = 'KA05MS8874';
     
     console.log(`🎬 SIMULATION: Starting checkout for booking ${bookingId}`);
     
@@ -3105,12 +3227,12 @@ const UsersList = ({ onBack, recentActivity = [] }) => {
                                   }}>
                                     {detectedPlate?.checkinTime && (
                                       <div style={{ fontSize: '1rem', marginBottom: '10px', color: displayStatus === 'completed' ? '#047857' : '#92400e' }}>
-                                        ✅ <strong>Check-in:</strong> {detectedPlate.checkinTime.toLocaleTimeString()} - KA19EQ1316
+                                        ✅ <strong>Check-in:</strong> {detectedPlate.checkinTime.toLocaleTimeString()} - KA05MS8874
                                       </div>
                                     )}
                                     {detectedPlate?.checkoutTime && (
                                       <div style={{ fontSize: '1rem', marginBottom: '10px', color: '#047857' }}>
-                                        ✅ <strong>Checkout:</strong> {detectedPlate.checkoutTime.toLocaleTimeString()} - KA19EQ1316
+                                        ✅ <strong>Checkout:</strong> {detectedPlate.checkoutTime.toLocaleTimeString()} - KA05MS8874
                                       </div>
                                     )}
                                     {displayStatus === 'completed' && (
@@ -3276,7 +3398,7 @@ const UsersList = ({ onBack, recentActivity = [] }) => {
                                     🎉 Live Camera Simulation Successfully Completed!
                                   </div>
                                   <div style={{ fontSize: '1.1rem', color: '#065f46' }}>
-                                    Vehicle KA19EQ1316 completed full check-in and checkout cycle with live camera monitoring
+                                    Vehicle KA05MS8874 completed full check-in and checkout cycle with live camera monitoring
                                   </div>
                                 </div>
                               )}

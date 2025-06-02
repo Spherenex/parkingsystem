@@ -913,109 +913,18 @@ const BookingsOverview = ({ bookings = [], onBookingsUpdated, screenSize }) => {
 
   // No bookings component
   const renderNoBookings = () => (
-    <div className="no-bookings">
-      <AlertCircle size={responsiveState.isMobile ? 28 : 32} />
-      <h4>No bookings found</h4>
-      <p>
-        {responsiveState.isMobile 
-          ? `No ${activeFilter} bookings to show.`
-          : `No bookings found for the selected filter: ${activeFilter}.`
-        }
-      </p>
+    <div>
+    
     </div>
   );
 
   return (
     <div 
-      ref={containerRef}
-      className="bookings-overview"
-      role="region"
-      aria-label="Bookings overview"
     >
-      {/* Header Section */}
-      <div className="bookings-overview-header">
-        <div className="overview-title">
-          <div className="overview-title-icon">
-            <BarChart3 size={responsiveState.isMobile ? 16 : 20} />
-          </div>
-          <h3>
-            {responsiveState.isMobile ? 'Bookings' : 'Booking Activity'}
-          </h3>
-          
-          {/* Statistics Display */}
-          {statistics && !responsiveState.showCompactView && (
-            <div className="booking-stats" style={{
-              display: 'flex',
-              gap: 'var(--spacing-md)',
-              marginLeft: 'var(--spacing-md)',
-              fontSize: 'var(--font-xs)',
-              color: 'var(--neutral-600)'
-            }}>
-              <span>Total: {statistics.total}</span>
-              <span>Active: {statistics.active}</span>
-            </div>
-          )}
-          
-          {/* Success Message */}
-          {refreshSuccess && (
-            <div className="refresh-success" role="status" aria-live="polite">
-              <CheckCircle size={16} />
-              <span>
-                {responsiveState.isMobile ? 'Updated!' : 'Slots refreshed successfully!'}
-              </span>
-            </div>
-          )}
-        </div>
-        
-        {/* Header Actions */}
-        <div className="header-actions">
-          {/* Filter Buttons */}
-          {!isFilterCollapsed && renderFilterButtons()}
-          
-          {/* Collapsed Filter Indicator */}
-          {isFilterCollapsed && (
-            <button
-              className="filter-toggle-btn"
-              onClick={() => setIsFilterCollapsed(false)}
-              aria-label="Show filters"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--spacing-xs)',
-                padding: 'var(--spacing-sm)',
-                background: 'var(--neutral-100)',
-                border: '1px solid var(--neutral-200)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: 'var(--font-xs)'
-              }}
-            >
-              <Filter size={14} />
-              {activeFilter}
-            </button>
-          )}
-          
-          {/* Refresh Button */}
-          <button 
-            className={`refresh-button ${refreshing ? 'refreshing' : ''}`}
-            onClick={handleRefreshActivity}
-            disabled={refreshing}
-            aria-label={refreshing ? 'Refreshing bookings...' : 'Refresh bookings'}
-          >
-            <RefreshCw size={16} />
-            <span>
-              {responsiveState.isMobile 
-                ? (refreshing ? 'Updating...' : 'Refresh')
-                : (refreshing ? 'Refreshing...' : 'Refresh Slots')
-              }
-            </span>
-          </button>
-        </div>
-      </div>
-      
-      {/* Error Display */}
+     
       {error && renderError()}
       
-      {/* Content Area */}
+      
       {loading ? (
         renderLoading()
       ) : filteredBookings.length === 0 ? (
