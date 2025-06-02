@@ -647,3 +647,409 @@ button {
     align-items: flex-start;
   }
 }
+
+/* Payment Options Styles */
+.payment-options {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.payment-options h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #1f2937;
+}
+
+.payment-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.payment-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  gap: 8px;
+}
+
+.cash-btn {
+  background-color: #10b981;
+  color: white;
+}
+
+.cash-btn:hover {
+  background-color: #059669;
+}
+
+.razorpay-btn {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.razorpay-btn:hover {
+  background-color: #2563eb;
+}
+
+.processing-payment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* Add these styles to your ParkingHistory.css file */
+
+.pay-now-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.pay-now-btn:hover {
+  background-color: #388e3c;
+}
+
+.payment-success-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background-color: #e8f5e9;
+  border-radius: 8px;
+  margin: 12px 0;
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.payment-success-message svg {
+  color: #4CAF50;
+  flex-shrink: 0;
+}
+
+/* Improve appearance of other buttons */
+.booking-actions {
+  margin-top: 15px;
+}
+
+.cancel-booking-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%;
+}
+
+.cancel-booking-btn:hover {
+  background-color: #d32f2f;
+}
+
+.payment-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.payment-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cash-btn {
+  background-color: #ff9800;
+  color: white;
+  border: none;
+}
+
+.cash-btn:hover {
+  background-color: #f57c00;
+}
+
+.razorpay-btn {
+  background-color: #3f51b5;
+  color: white;
+  border: none;
+}
+
+.razorpay-btn:hover {
+  background-color: #303f9f;
+}
+
+/* ParkingHistory.css */
+/* Existing styles... */
+
+/* Live Camera Simulation styles */
+.camera-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f0f4f8;
+  color: #2c3e50;
+  border: 1px solid #dde1e5;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.camera-toggle-btn:hover {
+  background-color: #e5eaf0;
+}
+
+.camera-toggle-btn.active {
+  background-color: #e8f3fe;
+  color: #0366d6;
+  border-color: #c5d9f2;
+}
+
+.live-camera-system {
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.simulation-card {
+  background-color: #f0f8ff;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e8f0;
+}
+
+.header-card {
+  background-color: #f0f8ff;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  border: 1px solid #e0e8f0;
+}
+
+.card-icon {
+  background-color: #e8f3ff;
+  padding: 12px;
+  border-radius: 8px;
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-content h2 {
+  color: #0f2b46;
+  margin: 0 0 8px 0;
+  font-size: 1.6rem;
+}
+
+.card-content p {
+  color: #456789;
+  margin: 0 0 16px 0;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  background-color: #e6f7e9;
+  padding: 8px 16px;
+  border-radius: 30px;
+  margin-bottom: 16px;
+}
+
+.status-indicator span {
+  margin-left: 8px;
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.features-container {
+  background-color: #f9fafc;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.feature-icon {
+  color: #5c6bc0;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.feature-text {
+  color: #455a64;
+  line-height: 1.4;
+}
+
+.slots-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.last-updated {
+  display: flex;
+  align-items: center;
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.last-updated svg {
+  margin-right: 4px;
+}
+
+.slot-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #4caf50;
+  transition: all 0.3s ease;
+}
+
+.slot-card.occupied {
+  border-left-color: #f44336;
+}
+
+.slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.slot-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #37474f;
+}
+
+.slot-status {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.slot-status svg {
+  margin-right: 4px;
+}
+
+.status-vacant {
+  color: #4caf50;
+}
+
+.status-occupied {
+  color: #f44336;
+}
+
+.sensor-data {
+  background-color: #f9fafc;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.sensor-group {
+  margin-bottom: 8px;
+}
+
+.sensor-group:last-child {
+  margin-bottom: 0;
+}
+
+.sensor-label {
+  font-weight: 500;
+  color: #546e7a;
+  margin-bottom: 4px;
+}
+
+.sensor-value {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #455a64;
+}
+
+.sensor-status {
+  font-size: 0.8rem;
+  background-color: #e0e0e0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.sensor-status.triggered {
+  background-color: #ffccbc;
+  color: #d84315;
+}
+
+.slot-footer {
+  font-size: 0.85rem;
+  color: #78909c;
+}
+
+.occupancy-logic {
+  font-style: italic;
+}
